@@ -17,52 +17,107 @@ from ui.zoomUpdate_ui import Ui_MainWindow
 from ui.NE_Dialog_ui import Ui_Dialog
 from control.fileCheck import fileCheck, OPEN_FILE_OK, VERIFY_VERSION_OK
 from control.config import *
+from pyparsing import Word,Combine,Literal,nums
+
+#错误码
+ZOOM_UPDATE_CODE_BASE = 1000
+ZOOM_OK =  ZOOM_UPDATE_CODE_BASE + 0
+IP_ERR  =  ZOOM_UPDATE_CODE_BASE + 1
 
 class editNEDialog(QDialog):
     def __init__(self,parent=None):
         super(editNEDialog,self).__init__(parent)
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+
+        #对IP输入框增加校验
         rx= QRegExp("((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)");
         validator =QRegExpValidator(rx,self)
         self.ui.lineEditIP.setValidator(validator)
         
         QObject.connect(self.ui.pushButtonOK, SIGNAL("clicked()"), self, SLOT("confirm()"))
-        parent.setDisabled(True)
-        self.setEnabled(True)
+
                 
-    def confirm(self):
-        if self.ui.lineEditNE.text()=="":
-            print "self.ui.lineEditNE.text()="""
-            self.ui.lineEditNE.setToolTip("hhhhh")
-            pass
-        
-        if self.ui.lineEditIP.text()=="":
-            print "self.ui.lineEditIP.text()="""
-            self.ui.lineEditIP.setStatusTip("afadfasdf")
-            pass
+    def ipCheck(self,IPtext):
+        '''
+                      校验IP地址是否正确
+        '''
+        IP_SECTION_1="IP1"
+        IP_SECTION_4="IP4"
+        IP=Combine(   Word(nums).setResultsName(IP_SECTION_1)+Literal(".") 
+                    + Word(nums)+Literal(".")
+                    + Word(nums)+Literal(".") 
+                    + Word(nums).setResultsName(IP_SECTION_4)
+                  )
+        try:
+            result = IP.searchString(IPtext)
+            if int(result[0][IP_SECTION_1]) == 0:
+                return IP_ERR
+
+            if int(result[0][IP_SECTION_4]) == 0:
+                return IP_ERR
+        except:    
+            return IP_ERR
+        return ZOOM_OK
                     
-        if self.ui.lineEditManageUser.text()=="":
-            print "self.ui.lineEditManageUser.text()="""
-            pass
-
-        if self.ui.lineEditManagePassword.text()=="":
-            print "self.ui.lineEditManagePassword.text()="""
-            pass
-
-        if self.ui.lineEditAccessUser.text()=="":
-            print "self.ui.lineEditAccessUser.text()="""
-            pass
-
-        if self.ui.lineEditAccessPassword.text()=="":
-            print "self.ui.lineEditAccessPassword.text()="""
-            pass
+                    
+    def confirm(self):
+        '''
+                     确认按钮连接的slot,用来创建网元
+        '''
+        message=""
+        neName         = self.ui.lineEditNE.text()
+        neIp           = self.ui.lineEditIP.text()
+        manageUserName = self.ui.lineEditManageUser.text()
+        managePassword = self.ui.lineEditManagePassword.text()
+        accessUserName = self.ui.lineEditAccessUser.text()
+        accessPassword = self.ui.lineEditAccessPassword.text()
+                
+        if (neName         == "" or  
+            neIp           == "" or
+            accessUserName == "" or  
+            accessPassword == "" or 
+            manageUserName == "" or
+            managePassword == ""):
+            message=u"有输入框为空，请完成！"
+            QMessageBox.information(self,u"警告",message)
+            return
+        
+#         if neName=="":
+#             message+=u"网元名称为空，请输入\n"
+#         
+#         if neIp=="":
+#             message+=u"IP地址为空，请输入\n"
+#                     
+#         if accessUserName=="":
+#             message+=u"管理平台用户为空，请输入\n"
+# 
+#         if accessPassword=="":
+#             message+=u"管理平台密码为空，请输入\n"
+# 
+#         if manageUserName=="":
+#             message+=u"接入平台密码为空，请输入\n"
+# 
+#         if managePassword=="":
+#             message+=u"接入平台密码为空，请输入\n"
+#         
+#         if message!="":
+#             QMessageBox.information(self,u"警告",message)
+#             return
+        
+        if self.ipCheck(self.ui.lineEditIP.text()) != ZOOM_OK:
+            message=u"IP地址格式不正确"
+            QMessageBox.information(self,u"警告",message)
+            
+        
+        
+        
+        ne =NE(neName,neIp,accessUserName,accessPassword,manageUserName,managePassword)
+        
+        self.accept()
         
 #         print self.parent().NEs
-        self.parent().setDisabled(False)
-        self.close()
-        
-        pass            
+
 
 class updateProgress(QStyledItemDelegate):
     def paint(self, painter, option, index):
@@ -219,7 +274,8 @@ class updateWindow(QMainWindow):
 #             self.Dialog. 
             
         testDialog= editNEDialog(self)
-        testDialog.show()
+        res=testDialog.exec_()
+        print res
         self.Dialog = testDialog
         
         
