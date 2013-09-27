@@ -1,0 +1,9 @@
+eclipse.preferences.version=1
+encoding//pyside/control/config.py=UTF-8
+encoding//pyside/control/debug.py=UTF-8
+encoding//pyside/control/fileCheck.py=UTF-8
+encoding//pyside/control/ftp.py=UTF-8
+encoding//pyside/control/telnet.py=UTF-8
+encoding//pyside/ui/zoomUpdate_ui.py=utf-8
+encoding//pyside/zoomUpdate.py=UTF-8
+encoding/test.py=utf-8
