@@ -10,7 +10,7 @@ import traceback
 import filecmp
 from debug import ftpDebug,controlDebug,classDecorator
 
-FTP_BASE = 0X200
+FTP_BASE = 400
 FTP_INIT                 = FTP_BASE + 0
 FTP_OK                   = FTP_BASE + 1
 FTP_ERR                  = FTP_BASE + 2
@@ -30,7 +30,7 @@ ERR5=-1
 
 
 class ftpAC():
-    __metaclass__ = classDecorator
+#     __metaclass__ = classDecorator
     
     def __init__(self,targetIp):
         self.targetIp    = targetIp

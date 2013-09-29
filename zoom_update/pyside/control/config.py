@@ -14,7 +14,7 @@ from fileCheck import fileCheck,RMIOS_STR,VXWORKS_STR,LINUX_STR,VERSION_STR,BOOT
 from ftp import ftpAC ,FTP_OK
 
 #错误码
-CONFIG_CODE_BASE                     = 0X300 
+CONFIG_CODE_BASE                     = 300 
 READ_CONFIG_OK                       = CONFIG_CODE_BASE + 0 
 READ_CONFIG_ERR                      = CONFIG_CODE_BASE + 1
 SAVE_CONFIG_OK                       = CONFIG_CODE_BASE + 2
@@ -49,8 +49,8 @@ FTP_LOGOUT_MANAGE_PLATFORM_ERR       = CONFIG_CODE_BASE + 29
 FTP_PUT_SOFT_MANAGE_PLATFORM_ERR     = CONFIG_CODE_BASE + 30
 SOME_CONFIG_FILE_NOT_SAVED           = CONFIG_CODE_BASE + 31
 
-FILE_IS_NOT_EXIST                     = CONFIG_CODE_BASE + 32
-FILE_IS_EXIST                         = CONFIG_CODE_BASE + 33
+FILE_IS_NOT_EXIST                    = CONFIG_CODE_BASE + 32
+FILE_IS_EXIST                        = CONFIG_CODE_BASE + 33
 PYPARSING_FILE_ERR                   = CONFIG_CODE_BASE + 34
 
 #关键字
@@ -67,31 +67,7 @@ NE_STATE           = u"网元状态"
 UPDATE_STATE       = u"进度"
 
 
-#界面显示表头
-# showColumn  = {NE_NAME           : 0  ,
-#               NE_IP              : 1  ,
-#               ACCESS_USER        : 2  ,
-#               ACCESS_PASSWORD    : 3  ,
-#               MANAGE_USER        : 4  ,
-#               MANAGE_PASSWORD    : 5  ,
-#               SOFTWARE_VERSION   : 6  ,    
-#               HARDWARE_VERSION   : 7  ,
-#               MASTER_SLAVE_STATE : 8  ,     
-#               NE_STATE           : 9  ,
-#               UPDATE_STATE       : 10 ,
-#              }
-showColumn  = {NE_NAME           : 0  ,
-              NE_IP              : 1  ,
-#               ACCESS_USER        : 2  ,
-#               ACCESS_PASSWORD    : 3  ,
-#               MANAGE_USER        : 4  ,
-#               MANAGE_PASSWORD    : 5  ,
-              SOFTWARE_VERSION   : 2  ,    
-              HARDWARE_VERSION   : 3  ,
-              MASTER_SLAVE_STATE : 4  ,     
-              NE_STATE           : 5  ,
-              UPDATE_STATE       : 6  ,
-             }
+
 
 # TELNET_ACCESS_PORT = 23
 # TELNET_MANAGE_PORT = 87
@@ -240,10 +216,10 @@ class NE:
         self.willUpdateSoftPartition =None
         self.masterSlaveState = None
         self.neState          = None
-        self.processState     = None
+        self.processState     = 0
         self.updateFile       = None
         
-        self.telnetManage = telnetAC(self.neIp, 
+        self.telnetManagePlatform = telnetAC(self.neIp, 
                                    self.telnet_manage_port, 
                                    self.telnet_manage_user_except_string, 
                                    self.telnet_manage_password_except_string, 
@@ -267,18 +243,18 @@ class NE:
         '''检查网元，获取网元信息，软件版本，硬件版本，主备状态'''
          
         #管理平台登录操作
-        result = self.telnetManage.login(self.manageUserName, self.managePassword) 
+        result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
         if result != TELNET_OK:
             controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
             return TELNET_MANAGE_PLATFORM_ERR
          
-        self.telnetManage.setCommand(self.telnet_manage_commandPromt_dict)
+        self.telnetManagePlatform.setCommand(self.telnet_manage_commandPromt_dict)
         
         #下发版本查看命令 
-        result=self.telnetManage.runCommand(self.telnet_manage_command_dict[GET_VERSION])
+        result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[GET_VERSION])
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_commandPromt_dict[GET_VERSION]))
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return GET_SOFT_VERSION_ERR
          
         #获取软件版本
@@ -288,40 +264,40 @@ class NE:
                      fileCheck.pyparsingstr[VXWORKS_STR] +\
                      fileCheck.pyparsingstr[LINUX_STR] +\
                      fileCheck.pyparsingstr[VERSION_STR]
-            result=tempstr.searchString(self.telnetManage.commandResult,True)         
-#             result=fileCheck.pyparsingstr[VERSION_STR].searchString(self.telnetManage.commandResult,True)
+            result=tempstr.searchString(self.telnetManagePlatform.commandResult,True)         
+#             result=fileCheck.pyparsingstr[VERSION_STR].searchString(self.telnetManagePlatform.commandResult,True)
             print result
             self.softwareVersion=result[0][VERSION_STR]
         except:
             controlDebug("parsing software version err\n")
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return PYPARSING_SOFTWARE_VERSION_ERR   
  
         #获取硬件版本
         try:
-#             controlDebug(self.telnetManage.commandResult)
-            result=self.hardwareCodePyparsingStr.searchString(self.telnetManage.commandResult,True)
+#             controlDebug(self.telnetManagePlatform.commandResult)
+            result=self.hardwareCodePyparsingStr.searchString(self.telnetManagePlatform.commandResult,True)
  
             #硬件型号取硬件code的第2和第3字节
             self.hardwareVersion=hardwareDict[int(result[0][HARDWARE_CODE][2:4])]
         except:
             controlDebug("parsing hardware version err\n")
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return PYPARSING_HARDWARE_VERSION_ERR   
             
         #获取当前运行软件分区
         try:
-#             controlDebug(self.telnetManage.commandResult)
-            result=self.currentVersionPyparsingStr.searchString(self.telnetManage.commandResult,True)
+#             controlDebug(self.telnetManagePlatform.commandResult)
+            result=self.currentVersionPyparsingStr.searchString(self.telnetManagePlatform.commandResult,True)
             self.currentSoftPartition    = result[0][CURRENT_SOFT_PARTITION]
             self.willUpdateSoftPartition = GET_WILL_UPDATE_SOFT_PARTITION[self.currentSoftPartition]
         except:
             controlDebug("parsing current soft partion  err\n")
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return PYPARSING_CURRENT_SOFT_PARTITION_ERR   
         
         #退出管理平台telnet            
-        self.telnetManage.logout()
+        self.telnetManagePlatform.logout()
 
 
         #接入平台登入操作
@@ -352,85 +328,85 @@ class NE:
         
     def updateSoft(self,fileName,softPartition=None):
         #管理平台升级软件操作
-        result = self.telnetManage.login(self.manageUserName, self.managePassword) 
+        result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
         if result != TELNET_OK:
             controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
             return TELNET_MANAGE_PLATFORM_ERR        
         
-        self.telnetManage.setCommand(self.telnet_manage_commandPromt_dict)
+        self.telnetManagePlatform.setCommand(self.telnet_manage_commandPromt_dict)
         
         #通过ls命令,查询\root目录下是否存在文件名与函数传进来的fileName一致
-        result=self.telnetManage.runCommand(self.telnet_manage_command_dict[LS], self.softPath)
+        result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[LS], self.softPath)
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[LS]))
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return RUN_LS_COMMAND_ERR
         try:
             #由于无法使用变量到CaselessLiteral，如下代码没余用到setResultsName,采用直接取值的方式
             fileNamePyparsingstr=CaselessLiteral(fileName)
-            result=fileNamePyparsingstr.searchString(self.telnetManage.commandResult,True)
+            result=fileNamePyparsingstr.searchString(self.telnetManagePlatform.commandResult,True)
             if result[0][0]!=fileName:
                 return GET_UPDATE_FILE_ERR
             self.updateFile = fileName
         except:
             controlDebug("parsing root softfile err\n")
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return PYPARSING_UPDATE_FILE_ERR  
         
          
         #下发upgrade命令
         if SOFT_PARTITION.has_key(softPartition):
-            result=self.telnetManage.runCommand(self.telnet_manage_command_dict[UPGRADE], SOFT_PARTITION[softPartition])
+            result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[UPGRADE], SOFT_PARTITION[softPartition])
         else:
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return SOFT_PARTITION_PARA_ERR
             
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[UPGRADE]))
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return RUN_UPGRADE_COMMAND_ERR
         
         #下发yes确认
-        result=self.telnetManage.runCommand(self.telnet_manage_command_dict[UPGRADE_YES])
+        result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[UPGRADE_YES])
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[UPGRADE_YES]))
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return RUN_UPGRADE_CONFIRM_COMMAND_ERR
         
-        controlDebug(self.telnetManage.commandResult)
-        self.telnetManage.logout() 
+        controlDebug(self.telnetManagePlatform.commandResult)
+        self.telnetManagePlatform.logout() 
         self.neState=CONNECT_OK
         return NE_OK
     
         
     def activeSoft(self,softPartition=None):
         #管理平台激活软件操作
-        result = self.telnetManage.login(self.manageUserName, self.managePassword) 
+        result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
         if result != TELNET_OK:
             controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
             return TELNET_MANAGE_PLATFORM_ERR        
         
-        self.telnetManage.setCommand(self.telnet_manage_commandPromt_dict)   
+        self.telnetManagePlatform.setCommand(self.telnet_manage_commandPromt_dict)   
         
         #下发active命令
         if SOFT_PARTITION.has_key(softPartition):
-            result = self.telnetManage.runCommand(self.telnet_manage_command_dict[ACTIVE], SOFT_PARTITION[softPartition])
+            result = self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[ACTIVE], SOFT_PARTITION[softPartition])
         else:
-            self.telnetManage.logout()    
+            self.telnetManagePlatform.logout()    
             return SOFT_PARTITION_PARA_ERR
-#             result = self.telnetManage.runCommand(self.telnet_manage_command_dict[ACTIVE], SOFT_PARTITION[self.currentSoftPartition]+"\r")
+#             result = self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[ACTIVE], SOFT_PARTITION[self.currentSoftPartition]+"\r")
 
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[ACTIVE]))
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return RUN_ACTIVE_COMMAND_ERR
         
-        self.telnetManage.logout()
+        self.telnetManagePlatform.logout()
         return NE_OK
 
     def reboot(self):
         #管理平台复位操作
-        result = self.telnetManage.login(self.manageUserName, self.managePassword) 
+        result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
         if result != TELNET_OK:
             controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
             return TELNET_MANAGE_PLATFORM_ERR        
@@ -438,24 +414,24 @@ class NE:
         print self.telnet_manage_commandPromt_dict
         print self.telnet_manage_command_dict
         
-        self.telnetManage.setCommand(self.telnet_manage_commandPromt_dict)   
+        self.telnetManagePlatform.setCommand(self.telnet_manage_commandPromt_dict)   
         
         
         #下发复位命令
-        result = self.telnetManage.runCommand(self.telnet_manage_command_dict[REBOOT])        
+        result = self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[REBOOT])        
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[REBOOT]))
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return RUN_REBOOT_COMMAND_ERR 
     
         #下发yes确认
-        result=self.telnetManage.runCommand(self.telnet_manage_command_dict[REBOOT_YES])
+        result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[REBOOT_YES])
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[REBOOT_YES]))
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return RUN_REBOOT_CONFIRM_COMMAND_ERR
         
-        controlDebug(self.telnetManage.commandResult)
+        controlDebug(self.telnetManagePlatform.commandResult)
         return NE_OK
     
     
@@ -463,34 +439,34 @@ class NE:
         '''
                      检查文件是否存在
         '''
-        result = self.telnetManage.login(self.manageUserName, self.managePassword) 
+        result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
         if result != TELNET_OK:
             controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
             return TELNET_MANAGE_PLATFORM_ERR  
         
 
-        result=self.telnetManage.runCommand(self.telnet_manage_command_dict[LS], path)
+        result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[LS], path)
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[LS]))
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return RUN_LS_COMMAND_ERR
         try:
             #由于无法使用变量到CaselessLiteral，如下代码没余用到setResultsName,采用直接取值的方式
             fileNamePyparsingstr=CaselessLiteral(fileName)
-            result=fileNamePyparsingstr.searchString(self.telnetManage.commandResult,True)
+            result=fileNamePyparsingstr.searchString(self.telnetManagePlatform.commandResult,True)
             if result[0][0]!=fileName:
-                self.telnetManage.logout()
+                self.telnetManagePlatform.logout()
                 return FILE_IS_NOT_EXIST
         except:
             controlDebug("parsing root softfile err\n")
-            self.telnetManage.logout()
+            self.telnetManagePlatform.logout()
             return PYPARSING_FILE_ERR  
         
-        self.telnetManage.logout()
+        self.telnetManagePlatform.logout()
         return FILE_IS_EXIST
     
         
-    def pingNe(self):
+    def pingTest(self):
         '''
         ping 网元,此处代码为网上抄袭而来
         '''
@@ -508,6 +484,24 @@ class NE:
         else:
             return  NE_DOWN      
 
+    def telnetManagePlatformTest(self):
+        result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
+        if result != TELNET_OK:
+            controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
+            return TELNET_MANAGE_PLATFORM_ERR  
+        
+        self.telnetManagePlatform.logout()
+        return NE_OK
+        
+    def telnetAccessPlatformTest(self):
+        result = self.telnetAccessPlatform.login(self.accessUserName,self.accessPassword)
+        if result != TELNET_OK:
+            controlDebug("can't login ac access platform: %s\n"%(self.neIp))
+            return TELNET_ACCESS_PLATFORM_ERR
+        
+        self.telnetAccessPlatform.logout()
+        return NE_OK
+             
 
     def __enterSuperMode(self):
         result=self.telnetAccessPlatform.runCommand(self.telnet_access_comandDict[ENABLE_MODE])
@@ -553,7 +547,7 @@ class NE:
         
         #退出接入平台telnet 
         self.telnetAccessPlatform.logout()        
-        self.neState=CONNECT_OK
+        self.neState=NE_OK
         return NE_OK
     
                 
@@ -773,7 +767,7 @@ if __name__ == '__main__':
 #     testNE.updateSoft("MIPS_1018R31T2.2_P7_ZTE","version0")
 #     testNE.activeSoft("version0")
 #     testNE.reboot()
-#     print testNE.pingNe()
+#     print testNE.pingTest()
 
 #     testNE.saveNeConfig()
 #     for key in testNE.ne_config_file_dict:

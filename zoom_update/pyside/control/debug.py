@@ -17,8 +17,8 @@ uiDebugFlag = 0
 controlDebugFlag = 1
 protocolFlag = 1
 
-telnetFlag = 1
-ftpFlag = 1
+telnetFlag = 0
+ftpFlag = 0
 
 classFlag = 1
 

@@ -5,7 +5,7 @@ import socket
 from debug import telnetDebug , classDecorator
 
 #错误码
-TELNET_CODE_BASE                = 0X100
+TELNET_CODE_BASE                = 100
 
 TELNET_OK                       = TELNET_CODE_BASE + 0
 TELNET_CONNECT_ERR              = TELNET_CODE_BASE + 1
@@ -32,7 +32,7 @@ class telnetAC():
     '''
     telnet 类,不考虑超时处理,所以使用时采用login -> setCommand-> runCommand->处理命令结果 ->logout 的方式执行
     '''
-    __metaclass__ = classDecorator 
+#     __metaclass__ = classDecorator 
     timeout = 300
     
     def __init__(self, targetIp, port, userString, passwordString, welcomeString, prompt):
