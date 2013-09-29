@@ -343,13 +343,15 @@ class NE:
             return RUN_LS_COMMAND_ERR
         try:
             #由于无法使用变量到CaselessLiteral，如下代码没余用到setResultsName,采用直接取值的方式
+            print fileName
+            print self.telnetManagePlatform.commandResult
             fileNamePyparsingstr=CaselessLiteral(fileName)
             result=fileNamePyparsingstr.searchString(self.telnetManagePlatform.commandResult,True)
             if result[0][0]!=fileName:
                 return GET_UPDATE_FILE_ERR
             self.updateFile = fileName
         except:
-            controlDebug("parsing root softfile err\n")
+            controlDebug("1 parsing root softfile err\n")
             self.telnetManagePlatform.logout()
             return PYPARSING_UPDATE_FILE_ERR  
         
@@ -411,11 +413,7 @@ class NE:
             controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
             return TELNET_MANAGE_PLATFORM_ERR        
         
-        print self.telnet_manage_commandPromt_dict
-        print self.telnet_manage_command_dict
-        
         self.telnetManagePlatform.setCommand(self.telnet_manage_commandPromt_dict)   
-        
         
         #下发复位命令
         result = self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[REBOOT])        
@@ -452,13 +450,17 @@ class NE:
             return RUN_LS_COMMAND_ERR
         try:
             #由于无法使用变量到CaselessLiteral，如下代码没余用到setResultsName,采用直接取值的方式
+            
             fileNamePyparsingstr=CaselessLiteral(fileName)
             result=fileNamePyparsingstr.searchString(self.telnetManagePlatform.commandResult,True)
-            if result[0][0]!=fileName:
-                self.telnetManagePlatform.logout()
+            if len(result)==0:
                 return FILE_IS_NOT_EXIST
+            
+#             if result[0][0] != fileName:
+#                 self.telnetManagePlatform.logout()
+#                 return FILE_IS_NOT_EXIST
         except:
-            controlDebug("parsing root softfile err\n")
+            controlDebug("parsing %s err\n"%(path+fileName))
             self.telnetManagePlatform.logout()
             return PYPARSING_FILE_ERR  
         

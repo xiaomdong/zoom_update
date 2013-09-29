@@ -25,6 +25,11 @@ VERSION_STR    = "version"
 BOOTLOADER_STR = "bootloader"
 
 class fileCheck():
+    '''
+          这里存在一个问题，版本里的描述必须按照vxworsk,rmios,linux,mips,bootloader的名称进行命名
+          否则需要修改，
+          这里先放宽检测条件，命名可以没有规则
+    '''
 #     __metaclass__ = classDecorator
     pyparsingstr={
                    RMIOS_STR   :Combine(CaselessLiteral("rmios")+Word(printables)).setResultsName(RMIOS_STR),
@@ -33,7 +38,15 @@ class fileCheck():
                    VERSION_STR :Combine(oneOf("MIPS POWERPC X86",caseless=False)+Word(printables)).setResultsName(VERSION_STR),
                    BOOTLOADER_STR :Combine(CaselessLiteral("bootloader")+Word(printables)).setResultsName(BOOTLOADER_STR)
                    } 
-    
+
+#     pyparsingstr={
+#                    RMIOS_STR   :Word(printables).setResultsName(RMIOS_STR),
+#                    VXWORKS_STR :Word(printables).setResultsName(VXWORKS_STR),
+#                    LINUX_STR   :Word(printables).setResultsName(LINUX_STR),
+#                    VERSION_STR :Word(printables).setResultsName(VERSION_STR),
+#                    BOOTLOADER_STR :Word(printables).setResultsName(BOOTLOADER_STR)
+#                    }
+     
     def __init__(self,file):
         self.file=file
 

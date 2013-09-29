@@ -48,6 +48,7 @@ class NeThread(QThread):
     def __init__(self,parent = None):
         super(NeThread,self).__init__(parent)
         self.funs       = []
+        self.funsArgs   = {}
         self.resultDict = {}
         self.emit       = None
         self.signal = NESignal()
@@ -56,28 +57,42 @@ class NeThread(QThread):
         self.funs=[]
         self.resultDict.clear()
         
-    def setThreadfun(self,fun,result): 
+    def setThreadfun(self,fun,*args): 
         '''
-                     设置进程需要运行函数
+                     设置进程计划运行的函数
         '''
         self.funs.append(fun)
-        self.resultDict[fun]=result
+        self.funsArgs[fun]=args
+        self.resultDict[fun]=None
+         
           
     def setEmit(self,string):
+        '''
+                     设置信号传递消息
+        '''
         self.emit = string     
          
     def run(self):
         '''
                      运行NE thread
         '''
+#         print self.funs
+#         print self.funsArgs
+#         print self.resultDict
+        
         for fun in self.funs:
-            result=fun()
+            print fun
+            print self.funsArgs[fun]
+            if len(self.funsArgs[fun]) != 0:
+                result=fun(*self.funsArgs[fun])
+            else:
+                result=fun()
             self.resultDict[fun]=result
+                            
         if self.emit!=None:    
             self.signal.sig.emit(str(self.emit))
         else:    
             self.signal.sig.emit('OK')
-
 
 
 class editNEDialog(QDialog):
@@ -106,6 +121,7 @@ class editNEDialog(QDialog):
         '''
         thread运行确认slot，用于判断线程运行结果
         '''
+        print self.thread.resultDict
         self.setEnabled(True)
         if self.thread.resultDict[self.ne.telnetAccessPlatformTest] != NE_OK:   
             message=u"无法telnet接入平台，请检查！"
@@ -189,10 +205,11 @@ class editNEDialog(QDialog):
             return
         
         #这里使用线程运行，以防止界面假死
-        self.thread.setThreadfun(self.ne.telnetAccessPlatformTest,None)
-        self.thread.setThreadfun(self.ne.telnetManagePlatformTest,None)
-#         self.thread.setThreadfun(self.ne.checkNe,None)
-        self.thread.run()
+        self.thread.clearThreadfun()
+        self.thread.setThreadfun(self.ne.telnetAccessPlatformTest)
+        self.thread.setThreadfun(self.ne.telnetManagePlatformTest)
+        self.thread.setThreadfun(self.ne.checkNe)
+        self.thread.start()
         
 
 class updateProgress(QStyledItemDelegate):
@@ -285,15 +302,8 @@ class updateWindow(QMainWindow):
         
                 
     def checkNeSlot(self,Data):
-        print Data
         row = int(Data)
-        print "0000000000000000000000"
-        print type(row)
-        print self.NEs
-        print self.NEthreads
-        print self.NEthreads[row]
-        print "0000000000000000000000"
-        
+
         if self.NEthreads[row].resultDict[self.NEs[row].checkNe] != NE_OK:
             self.ui.textEditInformation.setText(u"检查%s网元失败"%(self.NEs[row].neName))
         else:
@@ -306,6 +316,7 @@ class updateWindow(QMainWindow):
             model.setData(model.index(row, showColumn[UPDATE_STATE])        ,self.NEs[row].processState)
             self.ui.textEditInformation.setText(u"检查%s网元成功"%(self.NEs[row].neName))
         
+        
     def checkNe(self):
         '''
                      检查网元slot
@@ -313,16 +324,16 @@ class updateWindow(QMainWindow):
         self.ui.textEditInformation.setText(u"开始检查网元")
         
         for row in self.NEs.keys():
-            print type(row)
             self.NEthreads[row].clearThreadfun()
-            self.NEthreads[row].setThreadfun(self.NEs[row].checkNe,NE_OK)
+            self.NEthreads[row].setThreadfun(self.NEs[row].checkNe)
             self.NEthreads[row].signal.sig.connect(self.checkNeSlot)
             self.NEthreads[row].setEmit(row)
             self.NEthreads[row].run()
     
     
     def updataAllSlot(self):
-        pass
+        self.ui.textEditInformation.setText(u"结束升级网元")
+
     
     def updateAll(self):
         '''
@@ -331,25 +342,37 @@ class updateWindow(QMainWindow):
         if self.versionFile == None:
             Info = u"版本文件不可用，请配置好相关文件后再升级"
             QMessageBox.information(self,u"警告",Info)
-            
-        model = self.ui.tableViewNet.model()
-        print self.NEs
+
         for row in self.NEs.keys():
             ne =self.NEs[row]
+            self.NEthreads[row].clearThreadfun()
+            self.NEthreads[row].setThreadfun(ne.saveNeConfigToLocal, "test")
+            self.NEthreads[row].setThreadfun(ne.updateVersionFile, self.versionFile, self.versionFilePath)
+            self.NEthreads[row].setThreadfun(ne.updateSoft,self.versionFile, ne.willUpdateSoftPartition)
+            self.NEthreads[row].signal.sig.connect(self.updataAllSlot)
+            self.NEthreads[row].setEmit(row)
+            self.NEthreads[row].start()
+
+            
+#         model = self.ui.tableViewNet.model()
+#         print self.NEs
+#         for row in self.NEs.keys():
+#             ne =self.NEs[row]
 #             result = ne.checkNe()
-            result = NE_OK
-            if result != NE_OK:
-                pass
-            else:
-                ne.saveNeConfigToLocal("test")
-                ne.updateVersionFile(self.versionFile,self.versionFilePath)
-                ne.updateSoft(self.versionFile,ne.willUpdateSoftPartition)
-                
-                item=model.index(row, showColumn[UPDATE_STATE])
-                model.setData(item,"40")
-                
-        self.timer.start(2000)
+#             result = NE_OK
+#             if result != NE_OK:
+#                 pass
+#             else:
+#                 ne.saveNeConfigToLocal("test")
+# #                 ne.updateVersionFile(self.versionFile,self.versionFilePath)
+# #                 ne.updateSoft(self.versionFile,ne.willUpdateSoftPartition)
+#                  
+#                 item=model.index(row, showColumn[UPDATE_STATE])
+#                 model.setData(item,"40")
+#                  
+# #         self.timer.start(2000)
         self.ui.textEditInformation.setText(u"开始升级网元")
+        
         
         
     def showConfig(self):
@@ -419,9 +442,6 @@ class updateWindow(QMainWindow):
                 
         item=model.index(row, showColumn[UPDATE_STATE])
         model.setData(item,self.tempNe.processState)
-        
-#         model.setData(item,"20",Qt.EditRole)
-#         model.setData(item,"20")
  
         for key in showColumn.keys():
             model.item(row, showColumn[key]).setTextAlignment(Qt.AlignCenter);
@@ -446,6 +466,7 @@ class updateWindow(QMainWindow):
             QMessageBox.information(self,u"警告",Info)
             uiDebug("no NE select")
         uiDebug("del NE end")     
+
 
     def addVersionFile(self):
         '''
