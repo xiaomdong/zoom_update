@@ -13,14 +13,14 @@ import re
 
 logFlag=0
 printdebugFlag = 1
-uiDebugFlag = 0
-controlDebugFlag = 1
+uiDebugFlag = 1
+controlDebugFlag = 0
 protocolFlag = 1
 
 telnetFlag = 0
 ftpFlag = 0
 
-classFlag = 1
+classFlag = 0
 
 def getTextCoding():
     '''获取unicode编码'''

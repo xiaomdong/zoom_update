@@ -265,8 +265,6 @@ class NE:
                      fileCheck.pyparsingstr[LINUX_STR] +\
                      fileCheck.pyparsingstr[VERSION_STR]
             result=tempstr.searchString(self.telnetManagePlatform.commandResult,True)         
-#             result=fileCheck.pyparsingstr[VERSION_STR].searchString(self.telnetManagePlatform.commandResult,True)
-            print result
             self.softwareVersion=result[0][VERSION_STR]
         except:
             controlDebug("parsing software version err\n")
@@ -287,7 +285,6 @@ class NE:
             
         #获取当前运行软件分区
         try:
-#             controlDebug(self.telnetManagePlatform.commandResult)
             result=self.currentVersionPyparsingStr.searchString(self.telnetManagePlatform.commandResult,True)
             self.currentSoftPartition    = result[0][CURRENT_SOFT_PARTITION]
             self.willUpdateSoftPartition = GET_WILL_UPDATE_SOFT_PARTITION[self.currentSoftPartition]
@@ -455,10 +452,6 @@ class NE:
             result=fileNamePyparsingstr.searchString(self.telnetManagePlatform.commandResult,True)
             if len(result)==0:
                 return FILE_IS_NOT_EXIST
-            
-#             if result[0][0] != fileName:
-#                 self.telnetManagePlatform.logout()
-#                 return FILE_IS_NOT_EXIST
         except:
             controlDebug("parsing %s err\n"%(path+fileName))
             self.telnetManagePlatform.logout()
