@@ -120,18 +120,18 @@ class NeThread(QThread):
             #如果结果不符合预期，线程停止运行，发出thread_fun_err=附加码的信号,这里的附加码是预设值
             if result!=self.exceptResult[fun]:
                 self.signal.sig.emit(self.FUN_ERR+":"+str(fun)+"="+str(self.emit[fun]))
-                uiDebug(self.FUN_ERR+":"+str(fun)+"="+str(self.emit[fun]))
+                uiDebug("emit: "+self.FUN_ERR+":"+str(fun)+"="+str(self.emit[fun]))
                 uiDebug("**** NeThread run end 1")
                 return
             else:
             #如果结果符合预期，线程停止运行，发出thread_fun_ok=附加码的信号,这里的附加码是预设值    
                 if self.emit[fun]!=None:
                     self.signal.sig.emit(self.FUN_OK+":"+str(fun)+"="+str(self.emit[fun]))
-                    uiDebug(self.FUN_OK+":"+str(fun)+"="+str(self.emit[fun]))
+                    uiDebug("emit: "+self.FUN_OK+":"+str(fun)+"="+str(self.emit[fun]))
                 
         #当所有函数运行完毕后，发出self.FINISH_ALL_FUN信号    
         self.signal.sig.emit(self.FINISH_ALL_FUN+":"+str(fun)+"="+str(self.emit[fun]))
-        uiDebug(self.FINISH_ALL_FUN+":"+str(fun)+"="+str(self.emit[fun]))
+        uiDebug("emit: "+self.FINISH_ALL_FUN+":"+str(fun)+"="+str(self.emit[fun]))
         uiDebug("**** NeThread run end ")
         uiDebug("")
         uiDebug("")        
@@ -514,10 +514,10 @@ class updateWindow(QMainWindow):
         if configFile != None:
             pass
         
-    def test(self):
-        print self.Dialog
-        print self.Dialog.destroyed        
-        print self.Dialog.finished
+#     def test(self):
+#         print self.Dialog
+#         print self.Dialog.destroyed        
+#         print self.Dialog.finished
         
             
     def addNe(self):
@@ -611,6 +611,7 @@ def main():
     d = updateWindow(app)
     d.show()
     sys.exit(app.exec_())
-
+    print "test"
+    
 if __name__ == '__main__':
     main()    

@@ -174,7 +174,8 @@ class NE:
     
 
     
-    hardwareCodePyparsingStr=MatchFirst("the board id is:") + Word(printables).setResultsName(HARDWARE_CODE) +Literal('''<NULL>''')
+#     hardwareCodePyparsingStr=MatchFirst("the board id is:") + Word(printables).setResultsName(HARDWARE_CODE) +Literal('''<NULL>''')
+    hardwareCodePyparsingStr=MatchFirst("the board id is:") + Word(printables).setResultsName(HARDWARE_CODE)
     currentVersionPyparsingStr = MatchFirst("current-running-version:") + Word(printables).setResultsName(CURRENT_SOFT_PARTITION)
     
     #网元配置路径
@@ -340,8 +341,8 @@ class NE:
             return RUN_LS_COMMAND_ERR
         try:
             #由于无法使用变量到CaselessLiteral，如下代码没余用到setResultsName,采用直接取值的方式
-            print fileName
-            print self.telnetManagePlatform.commandResult
+#             print fileName
+#             print self.telnetManagePlatform.commandResult
             fileNamePyparsingstr=CaselessLiteral(fileName)
             result=fileNamePyparsingstr.searchString(self.telnetManagePlatform.commandResult,True)
             if result[0][0]!=fileName:
@@ -651,7 +652,7 @@ class updateConfig:
         try:
             self.config.read(self.configFile)
             for section in self.config.sections():
-                print section
+#                 print section
                 if str(section) == 'NE Section':
                     self.versionfile=self.config.get(section,"versionfile")
                 else:    

@@ -13,8 +13,8 @@ import re
 
 logFlag=0
 printdebugFlag = 1
-uiDebugFlag = 1
-controlDebugFlag = 0
+uiDebugFlag = 0
+controlDebugFlag = 1
 protocolFlag = 1
 
 telnetFlag = 0
