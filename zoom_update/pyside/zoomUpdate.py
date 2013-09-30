@@ -100,7 +100,12 @@ class NeThread(QThread):
          
     def run(self):
         '''运行NE thread'''
+        uiDebug("")
+        uiDebug("")
         uiDebug("**** NeThread run stat ")
+        print self.funs
+        uiDebug("")
+        uiDebug("")
         for fun in self.funs:
             
             #运行函数，将函数的运行结果保留到，self.realResult[fun]
@@ -128,6 +133,8 @@ class NeThread(QThread):
         self.signal.sig.emit(self.FINISH_ALL_FUN+":"+str(fun)+"="+str(self.emit[fun]))
         uiDebug(self.FINISH_ALL_FUN+":"+str(fun)+"="+str(self.emit[fun]))
         uiDebug("**** NeThread run end ")
+        uiDebug("")
+        uiDebug("")        
         return 
 
 
@@ -188,7 +195,7 @@ class editNEDialog(QDialog):
         
         if  result !=EMIT_SIGNAL_ERR:
             runResult = result[0]
-            print runResult
+
             if runResult == NeThread.FINISH_ALL_FUN:
                     self.parent().tempNe=self.ne
                     self.accept()
@@ -294,7 +301,6 @@ class updateProgress(QStyledItemDelegate):
     '''进度条打印类'''
     def paint(self, painter, option, index):
         if index.column() == showColumn[UPDATE_STATE]:
-            print type(index.data())
             progress = int(index.data());
             progressBarOption = QStyleOptionProgressBar();  
             progressBarOption.rect = option.rect;  
@@ -346,17 +352,16 @@ class updateWindow(QMainWindow):
         QObject.connect(self.timer,SIGNAL("timeout()"),self,SLOT("timerDone()"))
         self.NEthreads={}
 
-    def timerDone(self):
-        model = self.ui.tableViewNet.model()
-        print self.NEs
-        for row in self.NEs.keys():
-            ne =self.NEs[row]
-            result = NE_OK
-            if result != NE_OK:
-                pass
-            else:
-                item=model.index(row, showColumn[UPDATE_STATE])
-                model.setData(item,"40")
+#     def timerDone(self):
+#         model = self.ui.tableViewNet.model()
+#         for row in self.NEs.keys():
+#             ne =self.NEs[row]
+#             result = NE_OK
+#             if result != NE_OK:
+#                 pass
+#             else:
+#                 item=model.index(row, showColumn[UPDATE_STATE])
+#                 model.setData(item,"40")
 
     
     def checkNeExist(self,ne):
@@ -368,7 +373,17 @@ class updateWindow(QMainWindow):
                 return NE_NAME_EXIST
         return NE_NOT_EXIST        
         
-                
+    def checkThreadRunning(self):
+        '''检查网元线程是否运行'''
+        
+        if len(self.NEthreads)==0:
+            return False
+        
+        for thread in self.NEthreads.values():
+            if thread.isRunning()==False:
+                return False
+        return True    
+            
     def checkNeSlot(self,Data):
         '''接收检查线程反馈的消息，进行处理，根据结果在界面上反映'''
         uiDebug("")
@@ -388,14 +403,14 @@ class updateWindow(QMainWindow):
                 model.setData(model.index(row, showColumn[MASTER_SLAVE_STATE])  ,self.NEs[row].masterSlaveState)
                 model.setData(model.index(row, showColumn[NE_STATE])            ,self.NEs[row].neState)
                 model.setData(model.index(row, showColumn[UPDATE_STATE])        ,self.NEs[row].processState)
-                self.MessageShow(u"检查%s网元成功"%(self.NEs[row].neName))
+                self.messageShow(u"检查%s网元成功"%(self.NEs[row].neName))
                 self.NEthreads[row].signal.sig.disconnect(self.checkNeSlot)
                 
             if runResult == NeThread.FUN_OK:
                 uiDebug(u"%d网元，函数%s执行成功"%(row,runFun))
             
             if runResult == NeThread.FUN_ERR:
-                self.MessageShow(u"检查%s网元失败"%(self.NEs[row].neName))
+                self.messageShow(u"检查%s网元失败"%(self.NEs[row].neName))
                 uiDebug(u"%d网元，函数%s执行失败"%(row,runFun))
                 uiDebug(u"检查网元意外终止，请检查")
                 uiDebug("***updateWindow.checkNeSlot end")
@@ -410,6 +425,9 @@ class updateWindow(QMainWindow):
     def checkNe(self):
         '''检查网元slot'''
         self.ui.textEditInformation.setText(u"开始检查网元")
+        if self.checkThreadRunning()==True:
+            self.ui.textEditInformation.setText(u"上一个操作还未结束，请稍后再尝试")
+            return 
         
         for row in self.NEs.keys():
             self.NEthreads[row].clearThreadfun()
@@ -429,57 +447,42 @@ class updateWindow(QMainWindow):
             
             if runResult == NeThread.FINISH_ALL_FUN:
                 process = 100
-                self.MessageShow(u"结束升级网元")
-                self.NEthreads[row].signal.sig.connect(self.updataAllSlot)
+                self.messageShow(u"结束升级网元")
+                self.NEthreads[row].signal.sig.disconnect(self.updataAllSlot)
                  
             model = self.ui.tableViewNet.model()
             item=model.index(row, showColumn[UPDATE_STATE])
             model.setData(item,process)
         
             if runResult == NeThread.FUN_OK:
-                self.MessageShow(u"执行函数%s成功"%(runFun))
+                self.messageShow(u"执行函数%s成功"%(runFun))
                 
             if runResult == NeThread.FUN_ERR:
-                self.MessageShow(u"执行函数%s失败"%(runFun))
+                self.messageShow(u"执行函数%s失败"%(runFun))
                 
-                            
-#         print "updataAllSlot"
-#         print Data
-#         print type(Data)
-#         value =int(Data.encode("utf-8"))
-#         
-#         row     = value /1000
-#         process = value %1000
-#         model = self.ui.tableViewNet.model()
-#         item=model.index(row, showColumn[UPDATE_STATE])
-#         model.setData(item,process)
-# #         self.ui.textEditInformation.setText(u"结束升级网元")
     
-    def MessageShow(self,text):
+    def messageShow(self,text):
         self.ui.textEditInformation.append(text)
         
     def updateAll(self):
         '''开始升级'''
+        if self.checkThreadRunning()==True:
+            self.messageShow(u"上一个操作还未结束，请稍后再尝试")
+            return         
         if self.versionFile == None:
             Info = u"版本文件不可用，请配置好相关文件后再升级"
             QMessageBox.information(self,u"警告",Info)
 
         for row in self.NEs.keys():
-            print row
-            print type(row)
             ne =self.NEs[row]
             self.NEthreads[row].clearThreadfun()
             self.NEthreads[row].setThreadfun(ne.saveNeConfigToLocal, NE_OK, row*1000+5,"test")
-#             self.NEthreads[row].setEmit(ne.saveNeConfigToLocal,row*1000+5)
             self.NEthreads[row].setThreadfun(ne.updateVersionFile, NE_OK, row*1000+20,self.versionFile, self.versionFilePath)
-#             self.NEthreads[row].setEmit(ne.updateVersionFile,row*1000+20)
             self.NEthreads[row].setThreadfun(ne.updateSoft,NE_OK, row*1000+25,self.versionFile, ne.willUpdateSoftPartition)
-#             self.NEthreads[row].setEmit(ne.updateSoft,row*1000+25)
             self.NEthreads[row].signal.sig.connect(self.updataAllSlot)
-#             self.NEthreads[row].setEmit(row)
             self.NEthreads[row].start()
 
-        self.MessageShow(u"开始升级网元")
+        self.messageShow(u"开始升级网元")
         
         
         
@@ -519,6 +522,9 @@ class updateWindow(QMainWindow):
             
     def addNe(self):
         '''添加网元操作'''
+        if self.checkThreadRunning()==True:
+            self.messageShow(u"上一个操作还未结束，请稍后再尝试")
+            return 
         self.tempNe=None
         
         #使用模态Dialog进行输入
@@ -553,6 +559,10 @@ class updateWindow(QMainWindow):
     
     def delNe(self):
         '''删除网元操作'''
+        if self.checkThreadRunning()==True:
+            self.messageShow(u"上一个操作还未结束，请稍后再尝试")
+            return 
+                
         if self.ui.tableViewNet.selectionModel().hasSelection():
             currentIndex=self.ui.tableViewNet.selectionModel().currentIndex()
             model = self.ui.tableViewNet.model()
@@ -569,6 +579,10 @@ class updateWindow(QMainWindow):
 
     def addVersionFile(self):
         '''添加版本文件'''
+        if self.checkThreadRunning()==True:
+            self.messageShow(u"上一个操作还未结束，请稍后再尝试")
+            return 
+                
         self.ui.lineEditVersion.setText("")
         openFile = QFileDialog.getOpenFileName(self, "Find Files", QDir.currentPath())
         
