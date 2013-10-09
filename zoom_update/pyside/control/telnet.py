@@ -33,7 +33,7 @@ class telnetAC():
     telnet 类,不考虑超时处理,所以使用时采用login -> setCommand-> runCommand->处理命令结果 ->logout 的方式执行
     '''
 #     __metaclass__ = classDecorator 
-    timeout = 300
+    timeout = 10 #预计设置telnet10秒超时
     
     def __init__(self, targetIp, port, userString, passwordString, welcomeString, prompt):
         self.status = TELNET_NO_LOGIN         #telnet 状态

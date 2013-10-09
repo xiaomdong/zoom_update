@@ -4,7 +4,7 @@ Created on 2010-9-19
 
 @author: x00163361
 '''
-import logging 
+import logging,os,datetime,time
 import subprocess
 import platform
 from pyparsing import *
@@ -156,13 +156,6 @@ class NE:
                                     telnet_access_comandDict[ENABLE_PASSWORD]:"BNOS",
                                     telnet_access_comandDict[COPY_CONFIG]:"BNOS",                                                                        
                                }
-
-#     telnet_access_commandPromtDict={telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]:"#",
-#                                     telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO]:"#",
-#                                     telnet_access_comandDict[ENABLE_MODE]:"Password:",
-#                                     telnet_access_comandDict[ENABLE_PASSWORD]:"#",
-#                                     telnet_access_comandDict[COPY_CONFIG]:"#",                                                                        
-#                                }
          
     #管理平台配置    
     telnet_manage_port  = 87
@@ -226,6 +219,7 @@ class NE:
                       accessPassword = "bnas",
                       manageUserName = "root",
                       managePassword = "fitap^_^",
+                      logpath="."
                       ):
         self.neName = neName
         self.neIp   = neIp
@@ -261,9 +255,27 @@ class NE:
         self.noSavedConfigFile = []   
         self.savedConfigFile   = []   
         
-        #建立日志记录模块
+        #目录分隔符
+        self.directorySeparator="\\"
+        if platform.system() == "Linux":
+            self.directorySeparator="/" 
+        elif platform.system() == "Windows":     
+            self.directorySeparator="\\"
+            
+        #建立日志记录模块,已网元名加IP地址建立目录
+        if logpath==".":
+            self.logPath=self.neName+"_"+self.neIp
+        else:
+            self.logPath=logpath+self.neName+"_"+self.neIp
+
+        if os.path.exists(self.logPath) == False:
+            os.mkdir(self.logPath)     
+        
+        self.logFile = self.logPath + self.directorySeparator +"log"   
+        self.saveConfigPath= self.logPath + self.directorySeparator + "config_"
+                    
         self.logging = logging.getLogger(self.neName) 
-        fd=logging.FileHandler(self.neName+"_"+self.neIp)
+        fd=logging.FileHandler(self.logFile)
         fm=logging.Formatter("%(asctime)s  %(levelname)s - %(message)s","%Y-%m-%d %H:%M:%S")
         fd.setFormatter(fm)
         self.logging.addHandler(fd)
@@ -617,10 +629,9 @@ class NE:
         
         controlDebug( "ping %s ret: %d"%(self.neIp,ret))
         if ret == 0 :
-            return  NE_ALIVE   
+            return  NE_OK   
         else:
             return  NE_DOWN      
-
 
     def telnetManagePlatformTest(self):
         result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
@@ -639,8 +650,69 @@ class NE:
         
         self.telnetAccessPlatform.logout()
         return NE_OK
-             
 
+    def afterRebootTest(self):
+        loop =1
+        result=NE_DOWN
+        
+        self.logging.info("开始网元复位后连接测试")
+        
+        #ping测试, 测试10次, 间隔10秒, 只要有1次成功,退出测试
+        self.logging.info("**ping测试")
+        while loop!=11:
+            result=self.pingTest()
+            if result == NE_OK:
+                self.logging.info("**第%d次测试，测试成功"%(loop))
+                loop=11
+            else:
+                self.logging.warning("**第%d次测试，测试失败"%(loop))
+                loop=loop+1
+                    
+            time.sleep(10)
+        
+        #如果ping不同，则认为网元失连，返回NE_DOWN    
+        if result != NE_OK:
+            self.logging.warning("连续100秒无法ping通网元，网元状态不正常")
+            return NE_DOWN
+        
+        #管理平台测试，测试3次，间隔10秒，只要有1次成功,退出测试
+        #加上telnet本身10秒超时，这里每次测试应该是20秒，
+        self.logging.info("**telnet管理平台测试")
+        loop=1     
+        while loop!=4:
+            result=self.telnetManagePlatformTest()
+            if result == NE_OK:
+                self.logging.info("**第%d次测试，测试成功"%(loop))
+                loop=4
+            else:
+                self.logging.warning("**第%d次测试，测试失败"%(loop))
+                loop=loop+1    
+            time.sleep(10)
+         
+        if result!= NE_OK:
+            self.logging.warning("连续3次无法telnet管理平台，网元状态不正常")
+            return  NE_DOWN   
+
+        #接入平台测试，测试3次，间隔10秒，只要有1次成功,退出测试
+        #加上telnet本身10秒超时，这里每次测试应该是20秒，
+        self.logging.info("**telnet接入平台测试")
+        loop=1     
+        while loop!=4:
+            result=self.telnetManagePlatformTest()
+            if result == NE_OK:
+                self.logging.info("**第%d次测试，测试成功"%(loop))
+                loop=4
+            else:
+                self.logging.warning("**第%d次测试，测试失败"%(loop))
+                loop=loop+1    
+            time.sleep(10)
+         
+        if result!= NE_OK:
+            self.logging.warning("连续3次无法telnet接入平台，网元状态不正常")
+            return  NE_DOWN
+                    
+        return NE_OK
+                
     def __enterSuperMode(self):
         result=self.telnetAccessPlatform.runCommand(self.telnet_access_comandDict[ENABLE_MODE])
         self.logging.info(self.telnetAccessPlatform.commandResult)
@@ -707,11 +779,16 @@ class NE:
         return NE_OK
     
                 
-    def saveNeConfigToLocal(self,savePath):
+    def saveNeConfigToLocal(self):
         '''
                     保留网元配置文件到本地
         '''
-        
+        dataStr=str(datetime.date.today())
+        format = "%Y-%m-%d-%H-%M-%S" 
+        savePath =self.saveConfigPath + dataStr +self.directorySeparator
+        if os.path.exists(savePath) == False:
+            os.mkdir(savePath)
+
         self.logging.info("开始保留网元配置文件操作")
         self.logging.info("**ftp连接管理平台")
         result = self.ftpManagePlatform.login(self.manageUserName, self.managePassword)
@@ -923,7 +1000,8 @@ if __name__ == '__main__':
                accessUserName = "bnas",
                accessPassword = "bnas",
                manageUserName = "root",
-               managePassword = "fitap^_^",)
+               managePassword = "fitap^_^",
+               logpath="log")
 
 #     testNE1 =NE(neName = "AC",
 #                neIp   = "10.1.1.2",
@@ -942,15 +1020,15 @@ if __name__ == '__main__':
 #     print testNE
 #     print testNE1
 #     print testNE2
-    testNE.checkNe()
+#     testNE.checkNe()
 #     print testNE.hardwareVersion
 #     print testNE.masterSlaveState
 #     print testNE.softwareVersion
 #     print testNE.currentSoftPartition
      
      
-    testNE.updateSoft("MIPS_1018R31T2.2_P7_ZTE","version0")
-    testNE.activeSoft("version0")
+#     testNE.updateSoft("MIPS_1018R31T2.2_P7_ZTE","version0")
+#     testNE.activeSoft("version0")
 #     testNE.reboot()
 #     print testNE.pingTest()
 
@@ -962,5 +1040,7 @@ if __name__ == '__main__':
 #         else:
 #             print key + " is not exist"   
 #         
-#     testNE.saveNeConfigToLocal("E:\\test\\")        
+#     testNE.saveNeConfigToLocal()        
 #     
+
+    testNE.afterRebootTest()
