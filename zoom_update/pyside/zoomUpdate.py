@@ -18,9 +18,9 @@ from PySide.QtGui import *
 
 from ui.zoomUpdate_ui import Ui_MainWindow
 from ui.NE_Dialog_ui import Ui_Dialog
-from control.fileCheck import fileCheck, OPEN_FILE_OK, VERIFY_VERSION_OK
+from control.fileCheck import *
 from control.config import *
-from control.debug import uiDebug
+from control.debug import *
 from pyparsing import Word,Combine,Literal,nums
 
 #错误码
@@ -168,6 +168,7 @@ def pyparsingEmit(Data):
     uiDebug("return value %s"%(str(resultValue)))
     uiDebug("***pyparsingEmit end")
     uiDebug("")
+    
     
 class editNEDialog(QDialog):
     '''网元信息编辑框'''
@@ -342,6 +343,8 @@ class updateWindow(QMainWindow):
         QObject.connect(self.ui.pushButtonCheckNe, SIGNAL("clicked()"), self, SLOT("checkNe()"))
         QObject.connect(self.ui.pushButtonUpdateAll, SIGNAL("clicked()"), self, SLOT("updateAll()"))
         
+        
+        
         self.versionFile     = None
         self.versionFilePath = None
         self.config = None
@@ -352,30 +355,35 @@ class updateWindow(QMainWindow):
         QObject.connect(self.timer,SIGNAL("timeout()"),self,SLOT("timerDone()"))
         self.NEthreads={}
 
-#     def timerDone(self):
-#         model = self.ui.tableViewNet.model()
-#         for row in self.NEs.keys():
-#             ne =self.NEs[row]
-#             result = NE_OK
-#             if result != NE_OK:
-#                 pass
-#             else:
-#                 item=model.index(row, showColumn[UPDATE_STATE])
-#                 model.setData(item,"40")
-
-    
+        #建立日志记录模块
+        self.logging = logging.getLogger("update") 
+        fd=logging.FileHandler("update.log")
+        fm=logging.Formatter("%(asctime)s  %(levelname)s - %(message)s","%Y-%m-%d %H:%M:%S")
+        fd.setFormatter(fm)
+        self.logging.addHandler(fd)
+        self.logging.setLevel(logging.INFO)
+        self.logging.info("开始运行升级软件")
+        
+    def closeEvent(self,event):
+        self.logging.info("结束运行升级软件\n")
+        event.accept()
+                        
     def checkNeExist(self,ne):
-        '''检查网元是否已经存在了'''
+        '''检查网元名和网元IP是否已经存在'''
+        self.logging.info("检查网元名和网元IP是否已经存在")
         for item in self.NEs.values():
             if item.neIp == ne.neIp: 
+                self.logging.warning("网元IP%s已经存在"%(ne.neIp))
                 return NE_IP_EXIST
             if item.neName == ne.neName:
+                self.logging.warning("网元名%s已经存在"%(ne.neName))
                 return NE_NAME_EXIST
-        return NE_NOT_EXIST        
+        self.logging.info("检查网元结束，网元:IP%s,和网元名:%s,是唯一的"%(ne.neIp,ne.neName))    
+        return NE_NOT_EXIST     
+       
         
     def checkThreadRunning(self):
         '''检查网元线程是否运行'''
-        
         if len(self.NEthreads)==0:
             return False
         
@@ -384,11 +392,11 @@ class updateWindow(QMainWindow):
                 return False
         return True    
             
-    def checkNeSlot(self,Data):
+    def checkNeSlot(self,message):
         '''接收检查线程反馈的消息，进行处理，根据结果在界面上反映'''
         uiDebug("")
         uiDebug("***updateWindow.checkNeSlot start")
-        result = pyparsingEmit(Data)
+        result = pyparsingEmit(message)
         
         if  result !=EMIT_SIGNAL_ERR:
             runResult = result[0]
@@ -403,30 +411,34 @@ class updateWindow(QMainWindow):
                 model.setData(model.index(row, showColumn[MASTER_SLAVE_STATE])  ,self.NEs[row].masterSlaveState)
                 model.setData(model.index(row, showColumn[NE_STATE])            ,self.NEs[row].neState)
                 model.setData(model.index(row, showColumn[UPDATE_STATE])        ,self.NEs[row].processState)
-                self.messageShow(u"检查%s网元成功"%(self.NEs[row].neName))
+                self.messageShow(u"网元%s结束检查"%(self.NEs[row].neName))
                 self.NEthreads[row].signal.sig.disconnect(self.checkNeSlot)
+                self.logging.info("收到网元%s,网元检查结束消息:%s"%(self.NEs[row].neIp,message))
                 
             if runResult == NeThread.FUN_OK:
-                uiDebug(u"%d网元，函数%s执行成功"%(row,runFun))
-            
+                self.messageShow(u"网元%s，检查成功"%(self.NEs[row].neName))
+                self.logging.info("收到网元%s,函数执行成功消息:%s"%(self.NEs[row].neIp,message))
+                
             if runResult == NeThread.FUN_ERR:
-                self.messageShow(u"检查%s网元失败"%(self.NEs[row].neName))
-                uiDebug(u"%d网元，函数%s执行失败"%(row,runFun))
-                uiDebug(u"检查网元意外终止，请检查")
-                uiDebug("***updateWindow.checkNeSlot end")
-                uiDebug("")
+                self.messageShow(u"网元%s，检查失败"%(self.NEs[row].neName))
+                self.logging.error("收到网元%s,函数执行失败消息:%s"%(self.NEs[row].neIp,message))
                 return
         else:
-            uiDebug("receive without control message: %s"%(Data))
+            uiDebug("receive without control message: %s"%(message))
+            self.logging.warning("检查网元信息处理模块收到未定义的消息%s"%(message))
             
         uiDebug("***updateWindow.checkNeSlot end")
         uiDebug("")
         
+        
     def checkNe(self):
         '''检查网元slot'''
-        self.ui.textEditInformation.setText(u"开始检查网元")
+        self.logging.info("开始检查网元操作:")
+        self.messageShow(u"开始检查网元")
         if self.checkThreadRunning()==True:
             self.ui.textEditInformation.setText(u"上一个操作还未结束，请稍后再尝试")
+            self.logging.warning("上一个操作还未结束")
+            self.logging.info("终止检查网元操作\n")
             return 
         
         for row in self.NEs.keys():
@@ -434,10 +446,14 @@ class updateWindow(QMainWindow):
             self.NEthreads[row].setThreadfun(self.NEs[row].checkNe , NE_OK , row)
             self.NEthreads[row].signal.sig.connect(self.checkNeSlot)
             self.NEthreads[row].run()
+            self.logging.info("执行NE:%s,检测线程"%(self.NEs[row].neIp))
+            
+        self.logging.info("完成检查网元操作:相关检查操作在子线程中执行\n")
     
     
-    def updataAllSlot(self,Data):
-        result = pyparsingEmit(Data)
+    def updataAllSlot(self,message):
+        '''升级操作slot'''
+        result = pyparsingEmit(message)
         if  result !=EMIT_SIGNAL_ERR:
             runResult = result[0]
             runFun    = result[1]
@@ -447,7 +463,8 @@ class updateWindow(QMainWindow):
             
             if runResult == NeThread.FINISH_ALL_FUN:
                 process = 100
-                self.messageShow(u"结束升级网元")
+                self.messageShow(u"网元%s结束升级"%(self.NEs[row].neIp))
+                self.logging.info("收到网元%s结束升级消息%s"%(self.NEs[row].neIp,message))
                 self.NEthreads[row].signal.sig.disconnect(self.updataAllSlot)
                  
             model = self.ui.tableViewNet.model()
@@ -455,23 +472,32 @@ class updateWindow(QMainWindow):
             model.setData(item,process)
         
             if runResult == NeThread.FUN_OK:
-                self.messageShow(u"执行函数%s成功"%(runFun))
+                self.messageShow(u"网元%s升级操作,执行函数%s成功"%(self.NEs[row].neIp,runFun))
+                self.logging.info("收到网元%s升级操作,执行函数%s成功消息:%s"%(self.NEs[row].neIp,runFun,message))
                 
             if runResult == NeThread.FUN_ERR:
-                self.messageShow(u"执行函数%s失败"%(runFun))
-                
+                self.messageShow(u"网元%s升级操作,执行函数%s失败"%(self.NEs[row].neIp,runFun))
+                self.logging.error("收到网元%s升级操作,执行函数%s失败消息:%s"%(self.NEs[row].neIp,runFun,message))
     
     def messageShow(self,text):
         self.ui.textEditInformation.append(text)
         
     def updateAll(self):
         '''开始升级'''
+        self.logging.info("开始升级网元操作:")
+        self.messageShow(u"开始升级网元")
         if self.checkThreadRunning()==True:
             self.messageShow(u"上一个操作还未结束，请稍后再尝试")
+            self.logging.warning("上一个操作还未结束")
+            self.logging.info("终止升级网元操作\n")
             return         
+        
         if self.versionFile == None:
             Info = u"版本文件不可用，请配置好相关文件后再升级"
             QMessageBox.information(self,u"警告",Info)
+            self.logging.warning("未设置升级版本文件")
+            self.logging.info("终止升级网元操作\n")
+            return
 
         for row in self.NEs.keys():
             ne =self.NEs[row]
@@ -481,10 +507,8 @@ class updateWindow(QMainWindow):
             self.NEthreads[row].setThreadfun(ne.updateSoft,NE_OK, row*1000+25,self.versionFile, ne.willUpdateSoftPartition)
             self.NEthreads[row].signal.sig.connect(self.updataAllSlot)
             self.NEthreads[row].start()
-
-        self.messageShow(u"开始升级网元")
-        
-        
+            self.logging.info("执行NE:%s,升级线程"%(ne.neIp))
+            
         
     def showConfig(self):
         '''将导入的配置显示到界面上'''
@@ -513,17 +537,15 @@ class updateWindow(QMainWindow):
         configFile = QFileDialog.getOpenFileName(self, u"Load config File", QDir.currentPath(), filter="*.conf")
         if configFile != None:
             pass
-        
-#     def test(self):
-#         print self.Dialog
-#         print self.Dialog.destroyed        
-#         print self.Dialog.finished
-        
+
             
     def addNe(self):
         '''添加网元操作'''
+        self.logging.info("开始添加网元操作:")
         if self.checkThreadRunning()==True:
             self.messageShow(u"上一个操作还未结束，请稍后再尝试")
+            self.logging.warning("上一个操作还未结束")
+            self.logging.info("终止添加网元操作\n")
             return 
         self.tempNe=None
         
@@ -555,32 +577,40 @@ class updateWindow(QMainWindow):
      
             self.NEs[row]=self.tempNe
             self.NEthreads[row]=NeThread()
-
+            self.logging.info("添加网元%s\n"%(self.tempNe.neIp))
+        else:    
+            self.logging.warning("没有添加任何网元\n")
+        
     
     def delNe(self):
         '''删除网元操作'''
+        self.logging.info("开始删除网元")
         if self.checkThreadRunning()==True:
             self.messageShow(u"上一个操作还未结束，请稍后再尝试")
+            self.logging.warning("上一个操作还未结束")
+            self.logging.info("终止删除网元操作\n")
             return 
                 
         if self.ui.tableViewNet.selectionModel().hasSelection():
             currentIndex=self.ui.tableViewNet.selectionModel().currentIndex()
             model = self.ui.tableViewNet.model()
             model.removeRow(currentIndex.row(),currentIndex.parent())
+            self.logging.info("删除网元%s\n"%(self.NEs[currentIndex.row()].neIp))
             self.NEs.pop(currentIndex.row())
             self.NEthreads.pop(currentIndex.row())
         else:
-            
             Info = u"没有选中网元！请选中后，再操作。"
             QMessageBox.information(self,u"警告",Info)
-            uiDebug("no NE select")
-        uiDebug("del NE end")     
+            self.logging.warning("没有删除任何网元\n")
 
 
     def addVersionFile(self):
         '''添加版本文件'''
+        self.logging.info("开始添加版本文件操作")
         if self.checkThreadRunning()==True:
             self.messageShow(u"上一个操作还未结束，请稍后再尝试")
+            self.logging.warning("上一个操作还未结束")
+            self.logging.info("终止添加版本文件操作\n")
             return 
                 
         self.ui.lineEditVersion.setText("")
@@ -591,18 +621,20 @@ class updateWindow(QMainWindow):
             versionFile = fileCheck(openFile[0])
             if versionFile.getVersion() != OPEN_FILE_OK :
                 self.versionFile=None
-                self.ui.lineEditVersion.setText(u"版本文件无法打开")
+                self.ui.lineEditVersion.setText(u"没有打开任何版本文件")
+                self.logging.warning("没有打开任何版本文件")
                 return
             else:
                 if versionFile.verifyVersion() != VERIFY_VERSION_OK:
                     self.versionFile=None
                     self.ui.lineEditVersion.setText(u"版本文件无法校验")
+                    self.logging.warning("版本文件%s无法校验"%(openFile))
                     return
-                        
+                
         self.ui.lineEditVersion.setText(versionFile.version["version"])
         self.versionFilePath = openFile[0][0:len(openFile[0])- len(versionFile.version["version"])]   
         self.versionFile = versionFile.version["version"]    
-        
+        self.logging.info("添加版本文件%s成功\n"%(openFile[0]))
           
 def main():
     app = QApplication(sys.argv)

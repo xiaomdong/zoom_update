@@ -2,7 +2,7 @@
 import telnetlib
 import traceback 
 import socket
-from debug import telnetDebug , classDecorator
+from debug import *
 
 #错误码
 TELNET_CODE_BASE                = 100
