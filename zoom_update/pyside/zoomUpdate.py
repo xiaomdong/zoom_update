@@ -358,7 +358,7 @@ class updateWindow(QMainWindow):
         
         self.versionFile     = None   #目标升级版本文件名
         self.versionFilePath = None   #目标升级版本文件本地路径
-        self.config = None            #升级软件配置  
+        self.configFile = None            #升级软件配置  
         self.NEs = {}                 #升级网元字典 ,{ row : NE },每个列表中的一行对应一个网元对象
         
         self.Dialog = None            #添加网元Dialog对象
@@ -625,29 +625,40 @@ class updateWindow(QMainWindow):
                 
     def importConfig(self):
         '''从配置文件中导入配置'''
-        configFile = QFileDialog.getOpenFileName(self, u"Load config File", QDir.currentPath(), filter="*.conf")
+        configFile = QFileDialog.getOpenFileName(self, u"Load configFile File", QDir.currentPath(), filter="*.conf")
+        print configFile 
+        print str(configFile)
         if configFile != None:
             config = updateConfig()
-            config.readConfig(configFile)
+            config.readConfig(configFile[0])
             self.__activeConfig(config)
             #激活配置后要检查配置
             self.checkNe()
-            self.config=config
-            
+            self.configFile=configFile[0]
+    
     def saveConfig(self):
         '''保存当前升级配置，主要是网元信息'''
-        if self.config!=None:
-            self.config.clearNe()
+        print "self.configFile : "
+        print self.configFile 
+        if self.configFile!=None:
+            config = updateConfig()
+            config.configFile = self.configFile 
             for ne in self.NEs.values():
-                self.config.addNe(ne)
-            self.config.saveConfig()
-
+                print ne
+                config.addNe(ne)
+            print config.neLists    
+            config.saveConfig()
+        else:
+            self.saveConfigAs()
+            
     def saveConfigAs(self):
         '''保存当前升级配置，主要是网元信息'''
-        configFile = QFileDialog.getSaveFileName(self, u"save config File", QDir.currentPath(), filter="*.conf")
+        configFile = QFileDialog.getSaveFileName(self, u"save configFile File", QDir.currentPath(), filter="*.conf")
+        print configFile
+        print str(configFile)
         if configFile != None:
-            self.config.configFile=configFile
-            self.config.saveConfig()
+            self.configFile=configFile[0]
+            self.saveConfig()
             
             
     def __addNe(self,tempNe):

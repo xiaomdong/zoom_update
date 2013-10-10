@@ -105,7 +105,7 @@ ENABLE_PASSWORD ="super"
 # DEBUG_PASSWORD = "Il0vethisT1m."
 SHOW_HOTSTANDBY_GROUP_INFO_ALL="hotstandbyall"
 SHOW_HOTSTANDBY_GROUP_INFO="hotstandby"
-COPY_CONFIG="copy config"
+COPY_CONFIG="copy configFile"
 
 #内部使用字符串定义
 HARDWARE_CODE ="hardwareCode" 
@@ -152,7 +152,7 @@ class NE:
                               SHOW_HOTSTANDBY_GROUP_INFO:"show hotstandby group-info",
                               ENABLE_MODE:"enable",
                               ENABLE_PASSWORD:"super",
-                              COPY_CONFIG:"copy running-config startup-config"
+                              COPY_CONFIG:"copy running-configFile startup-configFile"
                               }
 
     telnet_access_commandPromtDict={telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]:"BNOS",
@@ -207,7 +207,7 @@ class NE:
                           "license.conf"          : "/icac/conf/",
                           "zoom_ac_config.conf"   : "/icac/conf/",
                           "hostname"              : "/etc/",
-                          "health-monitor-config" : "/etc/",
+                          "health-monitor-configFile" : "/etc/",
                           "lsave.conf"            : "/etc/",
                           "syslog.conf"           : "/etc/",
                           "ntp.conf"              : "/etc/",
@@ -1032,7 +1032,10 @@ class updateConfig:
         try:  
             if configFile==None:
                 configFile=self.configFile
-
+            print "******************"
+            print configFile
+            print self.config
+            print "******************"    
             with open(configFile, 'wb') as _configFile:
                 self.config.write(_configFile)
             self.configFile= configFile
@@ -1045,12 +1048,13 @@ class updateConfig:
              
 if __name__ == '__main__':
     
-#     testWriteNeConfig = updateConfig()
-#     testWriteNeConfig.setConfigFile("test.conf")
-#     testWriteNeConfig.addNe("AC1", "1.1.1.1", "bnas", "bnas", "root", "fitap")
+    testWriteNeConfig = updateConfig()
+    testWriteNeConfig.setConfigFile("test.conf")
+    ne=NE("AC1", "1.1.1.1", "bnas", "bnas", "root", "fitap")
+    testWriteNeConfig.addNe(ne)
 #     testWriteNeConfig.addNe("AC2", "1.1.1.1", "bnas", "bnas", "root", "fitap")
 #     testWriteNeConfig.addNe("AC3", "1.1.1.1", "bnas", "bnas", "root", "fitap")
-#     testWriteNeConfig.saveConfig()
+    testWriteNeConfig.saveConfig()
 # 
 #     
 #     testReadNeConfig = updateConfig()
@@ -1064,13 +1068,13 @@ if __name__ == '__main__':
 #               testWriteNeConfig.neLists[item].manageUserName+","+
 #               testWriteNeConfig.neLists[item].managePassword)
 
-    testNE =NE(neName = "AC",
-               neIp   = "10.1.1.2",
-               accessUserName = "bnas",
-               accessPassword = "bnas",
-               manageUserName = "root",
-               managePassword = "fitap^_^",
-               logpath="log")
+#     testNE =NE(neName = "AC",
+#                neIp   = "10.1.1.2",
+#                accessUserName = "bnas",
+#                accessPassword = "bnas",
+#                manageUserName = "root",
+#                managePassword = "fitap^_^",
+#                logpath="log")
 
 #     testNE1 =NE(neName = "AC",
 #                neIp   = "10.1.1.2",
@@ -1112,4 +1116,4 @@ if __name__ == '__main__':
 #     testNE.saveNeConfigToLocal()        
 #     
 
-    testNE.afterRebootTest()
+#     testNE.afterRebootTest()
