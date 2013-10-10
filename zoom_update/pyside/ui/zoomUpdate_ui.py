@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'zoomUpdate.ui'
 #
-# Created: Thu Sep 26 20:36:18 2013
+# Created: Thu Oct 10 20:39:32 2013
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -74,8 +74,6 @@ class Ui_MainWindow(object):
         self.menubar.setObjectName("menubar")
         self.menuFile = QtGui.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
-        self.menuLanguage = QtGui.QMenu(self.menuFile)
-        self.menuLanguage.setObjectName("menuLanguage")
         self.menuHelp = QtGui.QMenu(self.menubar)
         self.menuHelp.setObjectName("menuHelp")
         MainWindow.setMenuBar(self.menubar)
@@ -88,17 +86,17 @@ class Ui_MainWindow(object):
         self.actionAbout.setObjectName("actionAbout")
         self.actionExit = QtGui.QAction(MainWindow)
         self.actionExit.setObjectName("actionExit")
-        self.actionSavetConfig = QtGui.QAction(MainWindow)
-        self.actionSavetConfig.setObjectName("actionSavetConfig")
+        self.actionSaveConfig = QtGui.QAction(MainWindow)
+        self.actionSaveConfig.setObjectName("actionSaveConfig")
         self.actionChinese = QtGui.QAction(MainWindow)
         self.actionChinese.setObjectName("actionChinese")
         self.actionEnglish = QtGui.QAction(MainWindow)
         self.actionEnglish.setObjectName("actionEnglish")
-        self.menuLanguage.addAction(self.actionChinese)
-        self.menuLanguage.addAction(self.actionEnglish)
-        self.menuFile.addAction(self.actionSavetConfig)
+        self.actionSaveAs = QtGui.QAction(MainWindow)
+        self.actionSaveAs.setObjectName("actionSaveAs")
         self.menuFile.addAction(self.actionImportConfig)
-        self.menuFile.addAction(self.menuLanguage.menuAction())
+        self.menuFile.addAction(self.actionSaveConfig)
+        self.menuFile.addAction(self.actionSaveAs)
         self.menuFile.addAction(self.actionExit)
         self.menuHelp.addAction(self.actionAbout)
         self.menubar.addAction(self.menuFile.menuAction())
@@ -118,12 +116,12 @@ class Ui_MainWindow(object):
         self.pushButtonCheckNe.setText(QtGui.QApplication.translate("MainWindow", "网元检测", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButtonUpdateAll.setText(QtGui.QApplication.translate("MainWindow", "升级全部", None, QtGui.QApplication.UnicodeUTF8))
         self.menuFile.setTitle(QtGui.QApplication.translate("MainWindow", "文件", None, QtGui.QApplication.UnicodeUTF8))
-        self.menuLanguage.setTitle(QtGui.QApplication.translate("MainWindow", "语言", None, QtGui.QApplication.UnicodeUTF8))
         self.menuHelp.setTitle(QtGui.QApplication.translate("MainWindow", "帮助", None, QtGui.QApplication.UnicodeUTF8))
         self.actionImportConfig.setText(QtGui.QApplication.translate("MainWindow", "导入配置", None, QtGui.QApplication.UnicodeUTF8))
         self.actionAbout.setText(QtGui.QApplication.translate("MainWindow", "关于", None, QtGui.QApplication.UnicodeUTF8))
         self.actionExit.setText(QtGui.QApplication.translate("MainWindow", "退出", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionSavetConfig.setText(QtGui.QApplication.translate("MainWindow", "保留配置", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSaveConfig.setText(QtGui.QApplication.translate("MainWindow", "保留配置", None, QtGui.QApplication.UnicodeUTF8))
         self.actionChinese.setText(QtGui.QApplication.translate("MainWindow", "中文", None, QtGui.QApplication.UnicodeUTF8))
         self.actionEnglish.setText(QtGui.QApplication.translate("MainWindow", "英文", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSaveAs.setText(QtGui.QApplication.translate("MainWindow", "另存配置", None, QtGui.QApplication.UnicodeUTF8))
 

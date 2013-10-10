@@ -14,10 +14,10 @@ import re
 logFlag=0
 printdebugFlag = 1
 uiDebugFlag = 0
-controlDebugFlag = 1
+controlDebugFlag = 0
 protocolFlag = 1
 
-telnetFlag = 1
+telnetFlag = 0
 ftpFlag = 0
 
 classFlag = 0

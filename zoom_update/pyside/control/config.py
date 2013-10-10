@@ -4,7 +4,7 @@ Created on 2010-9-19
 
 @author: x00163361
 '''
-import logging,os,datetime,time
+import logging,os,datetime,time,filecmp
 import subprocess
 import platform
 from pyparsing import *
@@ -54,7 +54,12 @@ FILE_IS_NOT_EXIST                    = CONFIG_CODE_BASE + 32
 FILE_IS_EXIST                        = CONFIG_CODE_BASE + 33
 PYPARSING_FILE_ERR                   = CONFIG_CODE_BASE + 34
 
-SUPER_MODE_ERR                   = CONFIG_CODE_BASE + 34
+SUPER_MODE_ERR                       = CONFIG_CODE_BASE + 35
+
+UPDATE_VERSION_ERR                   = CONFIG_CODE_BASE + 36
+CONFIG_FILE_DIFF                     = CONFIG_CODE_BASE + 37
+CONFIG_FILE_CONTEXT_DIFF             = CONFIG_CODE_BASE + 38
+UPDATE_PARTITION_ERR                 = CONFIG_CODE_BASE + 39
 
 #关键字
 NE_NAME            = u"网元名" 
@@ -262,7 +267,7 @@ class NE:
         elif platform.system() == "Windows":     
             self.directorySeparator="\\"
             
-        #建立日志记录模块,已网元名加IP地址建立目录
+        #建立日志记录模块,在logpath目录下，以网元名加IP地址建立网元日志目录
         if logpath==".":
             self.logPath=self.neName+"_"+self.neIp
         else:
@@ -271,8 +276,11 @@ class NE:
         if os.path.exists(self.logPath) == False:
             os.mkdir(self.logPath)     
         
-        self.logFile = self.logPath + self.directorySeparator +"log"   
-        self.saveConfigPath= self.logPath + self.directorySeparator + "config_"
+        #记录网元操作的日志文件，处于日志目录下，名称为log
+        self.logFile = self.logPath + self.directorySeparator +"log"  
+        
+        #记录最近一次保留的配置文件路径 
+        self.saveConfigPath= None
                     
         self.logging = logging.getLogger(self.neName) 
         fd=logging.FileHandler(self.logFile)
@@ -397,10 +405,9 @@ class NE:
         #退出接入平台telnet 
         self.logging.info("**断开接入平台telnet连接") 
         self.telnetAccessPlatform.logout()        
-        self.neState=CONNECT_OK
+        self.neState=u"网元检查正常"
         self.logging.info("完成检查网元信息") 
         return NE_OK
-        
         
         
     def updateSoft(self,fileName,softPartition=None):
@@ -493,7 +500,7 @@ class NE:
         self.logging.info("**断开管理平台telnet连接")
         self.telnetManagePlatform.logout()
         self.logging.info("完成升级软件操作")
-        self.neState=CONNECT_OK
+        self.neState=u"上传软件完毕"
         return NE_OK
     
     
@@ -652,6 +659,7 @@ class NE:
         return NE_OK
 
     def afterRebootTest(self):
+        '''复位后的连通性检查'''
         loop =1
         result=NE_DOWN
         
@@ -712,7 +720,58 @@ class NE:
             return  NE_DOWN
                     
         return NE_OK
+
+    def afterRebootCheck(self,versionName):
+        '''复位后软件版本和配置文件校验'''
+        
+        self.logging.info("开始网元复位后版本和配置校验")
+        _softwareVersion = self.softwareVersion
+        _hardwareVersion = self.hardwareVersion
+        _currentSoftPartition = self.currentSoftPartition
+        _willUpdateSoftPartition = self.willUpdateSoftPartition
+        _saveConfigPath = self.saveConfigPath
+        
+        result =self.checkNe()
+        if result != NE_OK:
+            return result 
+        
+        result = self.saveNeConfigToLocal()
+        if result != NE_OK:
+            return result 
+        
+        #判断升级的版本是否是预期的版本
+        if versionName != self.softwareVersion:
+            self.logging.warning("升级后的版本%s与预期%s不符"%(self.softwareVersion,versionName))
+            return UPDATE_VERSION_ERR
+        else:
+            self.logging.info("升级后的版本%s与预期%s一致"%(self.softwareVersion,versionName))
+        
+        #判断升级的路径是否是预期的路径        
+#         if _willUpdateSoftPartition != self.currentSoftPartition:
+#             self.logging.warning("升级后的软件路径%s与预期不符%s"%(self.currentSoftPartition,_willUpdateSoftPartition))
+#             return UPDATE_PARTITION_ERR 
                 
+        #比较升级前后保留配置文件数目和名称是否一致        
+        dirCmpObject =filecmp.dircmp(_saveConfigPath,self.saveConfigPath)        
+        if dirCmpObject.diff_files !=[]:
+            self.logging.warning("升级前后保留的配置文件不一致")
+            self.logging.warning("升级前后保留的配置文件路径:%s",_saveConfigPath)
+            self.logging.warning("升级前后保留的配置文件路径:%s",self.saveConfigPath)
+            self.logging.warning("不同文件为: %s",dirCmpObject.diff_files)
+            return CONFIG_FILE_DIFF
+        
+        #比较升级前后保留的配置文件内容是否一致
+        result = filecmp.cmpfiles(_saveConfigPath,self.saveConfigPath,dirCmpObject.common)
+        if result[1]!=[] or result[2]!=[]:
+            self.logging.warning("升级前后保留的配置文件内容不一致")
+            self.logging.warning("升级前后保留的配置文件路径:%s",_saveConfigPath)
+            self.logging.warning("升级前后保留的配置文件路径:%s",self.saveConfigPath)
+            self.logging.warning("不同文件为: %s",result[1:3])
+            return CONFIG_FILE_CONTEXT_DIFF    
+        
+        self.logging.info("完成网元复位后版本和配置校验")   
+        return NE_OK
+                        
     def __enterSuperMode(self):
         result=self.telnetAccessPlatform.runCommand(self.telnet_access_comandDict[ENABLE_MODE])
         self.logging.info(self.telnetAccessPlatform.commandResult)
@@ -775,7 +834,7 @@ class NE:
         self.telnetAccessPlatform.logout()   
         self.logging.info("**断开接入平台telnet连接")     
         self.logging.info("完成接入平台配置保存操作")
-        self.neState=NE_OK
+        self.neState="保留网元配置成功"
         return NE_OK
     
                 
@@ -783,11 +842,12 @@ class NE:
         '''
                     保留网元配置文件到本地
         '''
-        dataStr=str(datetime.date.today())
         format = "%Y-%m-%d-%H-%M-%S" 
-        savePath =self.saveConfigPath + dataStr +self.directorySeparator
-        if os.path.exists(savePath) == False:
-            os.mkdir(savePath)
+        dataStr=str(datetime.datetime.today().strftime(format))
+        self.saveConfigPath =self.logPath + self.directorySeparator + "config_" + dataStr +self.directorySeparator
+        
+        if os.path.exists(self.saveConfigPath) == False:
+            os.mkdir(self.saveConfigPath)
 
         self.logging.info("开始保留网元配置文件操作")
         self.logging.info("**ftp连接管理平台")
@@ -802,7 +862,7 @@ class NE:
         self.savedConfigFile   = []
         for fileName in self.ne_config_file_dict.keys():
             if self.checkFileIsExist(fileName, self.ne_config_file_dict[fileName])== FILE_IS_EXIST:
-                result = self.ftpManagePlatform.getFile(self.ne_config_file_dict[fileName]+fileName , fileName , savePath)
+                result = self.ftpManagePlatform.getFile(self.ne_config_file_dict[fileName]+fileName , fileName , self.saveConfigPath)
                 if result != FTP_OK:
                     self.logging.error("**保留配置文件:%s,失败"%(self.ne_config_file_dict[fileName]+fileName))
                     self.noSavedConfigFile.append(fileName)
@@ -899,15 +959,18 @@ class updateConfig:
     def setVersionFile(self, versionfile):
         '''设置界面语言'''
         self.versionfile = versionfile
-                       
-    def addNe(self,neName,neIp,accessUserName,accessPassword,manageUserName,managePassword): 
-        self.neLists[neName] =NE(neName,neIp,accessUserName,accessPassword,manageUserName,managePassword)   
+
+    def clearNe(self):
+        self.neLists.clear()
+                               
+    def addNe(self,ne): 
+        self.neLists[ne.neName] =ne   
     
-    def delNe(self,neName):
+    def delNe(self,ne):
         try:
-            self.neLists.pop(neName)
+            self.neLists.pop(ne.neName)
         except:
-            controlDebug("del NE:%s err"%(neName))
+            controlDebug("del NE:%s err"%(ne.neName))
             return DEL_NE_ERR
         return DEL_NE_OK
         
@@ -916,7 +979,7 @@ class updateConfig:
         self.configFile=configFile
         neLists={}
         try:
-            self.config.read(self.configFile)
+            self.config.read(configFile)
             for section in self.config.sections():
 #                 print section
                 if str(section) == 'NE Section':
@@ -941,7 +1004,7 @@ class updateConfig:
         self.neLists=neLists
         return READ_CONFIG_OK
        
-    def saveConfig(self):
+    def saveConfig(self,configFile=None):
         '''保存服务器配置文件'''
         self.config.add_section('NE Section')
         self.config.set('NE Section', 'versionfile', self.versionfile)
@@ -966,14 +1029,20 @@ class updateConfig:
                            self.neLists[neKey].manageUserName+","+
                            self.neLists[neKey].managePassword)
            
-        try:     
-            with open(self.configFile, 'wb') as configfile:
-                self.config.write(configfile)
+        try:  
+            if configFile==None:
+                configFile=self.configFile
+
+            with open(configFile, 'wb') as _configFile:
+                self.config.write(_configFile)
+            self.configFile= configFile
         except:
             return  OPEN_CONFIG_FILE_ERR         
          
         return SAVE_CONFIG_OK 
-         
+
+
+             
 if __name__ == '__main__':
     
 #     testWriteNeConfig = updateConfig()

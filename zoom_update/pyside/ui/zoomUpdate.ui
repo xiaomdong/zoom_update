@@ -140,16 +140,9 @@
     <property name="title">
      <string>文件</string>
     </property>
-    <widget class="QMenu" name="menuLanguage">
-     <property name="title">
-      <string>语言</string>
-     </property>
-     <addaction name="actionChinese"/>
-     <addaction name="actionEnglish"/>
-    </widget>
-    <addaction name="actionSavetConfig"/>
     <addaction name="actionImportConfig"/>
-    <addaction name="menuLanguage"/>
+    <addaction name="actionSaveConfig"/>
+    <addaction name="actionSaveAs"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -177,7 +170,7 @@
     <string>退出</string>
    </property>
   </action>
-  <action name="actionSavetConfig">
+  <action name="actionSaveConfig">
    <property name="text">
     <string>保留配置</string>
    </property>
@@ -190,6 +183,11 @@
   <action name="actionEnglish">
    <property name="text">
     <string>英文</string>
+   </property>
+  </action>
+  <action name="actionSaveAs">
+   <property name="text">
+    <string>另存配置</string>
    </property>
   </action>
  </widget>
