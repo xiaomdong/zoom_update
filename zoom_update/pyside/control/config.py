@@ -60,6 +60,7 @@ UPDATE_VERSION_ERR                   = CONFIG_CODE_BASE + 36
 CONFIG_FILE_DIFF                     = CONFIG_CODE_BASE + 37
 CONFIG_FILE_CONTEXT_DIFF             = CONFIG_CODE_BASE + 38
 UPDATE_PARTITION_ERR                 = CONFIG_CODE_BASE + 39
+TARGET_VERSION_SAME                  = CONFIG_CODE_BASE + 40
 
 #关键字
 NE_NAME            = u"网元名" 
@@ -289,35 +290,39 @@ class NE:
         self.logging.addHandler(fd)
         self.logging.setLevel(logging.INFO)
         
-        
+    def checkUpdateFile(self,fileVersion):
+        if fileVersion == self.softwareVersion:
+            return TARGET_VERSION_SAME
+        return NE_OK
+    
     def checkNe(self):
         '''检查网元，获取网元信息，软件版本，硬件版本，主备状态'''
         
-        self.logging.info("开始检查网元信息") 
+        self.logging.info(u"开始检查网元信息") 
         
         #管理平台登录操作
-        self.logging.info("**telnet管理平台")
+        self.logging.info(u"**telnet管理平台")
         result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
         if result != TELNET_OK:
             controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
-            self.logging.error("**telnet管理平台失败: 错误码为:%d"%(result))
-            self.logging.info("由于意外，终止检查网元信息")
+            self.logging.error(u"**telnet管理平台失败: 错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止检查网元信息")
             return TELNET_MANAGE_PLATFORM_ERR
          
         self.telnetManagePlatform.setCommand(self.telnet_manage_commandPromt_dict)
         
         #下发版本查看命令 
-        self.logging.info("**下发获取版本命令:%s"%(self.telnet_manage_command_dict[GET_VERSION]))
+        self.logging.info(u"**下发获取版本命令:%s"%(self.telnet_manage_command_dict[GET_VERSION]))
         result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[GET_VERSION])
         if result != TELNET_OK:
-            controlDebug("run command %s err\n"%(self.telnet_manage_commandPromt_dict[GET_VERSION]))
-            self.logging.error("**执行获取版本命令日志失败: 错误码为:%d"%(result))
+            controlDebug(u"run command %s err\n"%(self.telnet_manage_commandPromt_dict[GET_VERSION]))
+            self.logging.error(u"**执行获取版本命令日志失败: 错误码为:%d"%(result))
             self.telnetManagePlatform.logout()
-            self.logging.info("**断开管理平台telnet连接")
-            self.logging.info("由于意外，终止检查网元信息")
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止检查网元信息")
             return GET_SOFT_VERSION_ERR
          
-        self.logging.info("**获取版本信息为:")
+        self.logging.info(u"**获取版本信息为:")
         self.logging.info(self.telnetManagePlatform.commandResult)   
             
         #获取软件版本
@@ -331,12 +336,12 @@ class NE:
         except:
             controlDebug("parsing software version err\n")
             self.telnetManagePlatform.logout()
-            self.logging.error("**解析软件版本信息出错")
-            self.logging.info("**断开管理平台telnet连接")
-            self.logging.info("由于意外，终止检查网元信息")
+            self.logging.error(u"**解析软件版本信息出错")
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止检查网元信息")
             return PYPARSING_SOFTWARE_VERSION_ERR   
  
-        self.logging.info("**获取软件版本信息为:%s"%(self.softwareVersion))
+        self.logging.info(u"**获取软件版本信息为:%s"%(self.softwareVersion))
         
         #获取硬件版本
         try:
@@ -348,12 +353,12 @@ class NE:
         except:
             controlDebug("parsing hardware version err\n")
             self.telnetManagePlatform.logout()
-            self.logging.error("**解析硬件版本信息出错")
-            self.logging.info("**断开管理平台telnet连接")
-            self.logging.info("由于意外，终止检查网元信息")
+            self.logging.error(u"**解析硬件版本信息出错")
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止检查网元信息")
             return PYPARSING_HARDWARE_VERSION_ERR   
             
-        self.logging.info("**获取硬件版本信息为:%s"%(self.hardwareVersion))
+        self.logging.info(u"**获取硬件版本信息为:%s"%(self.hardwareVersion))
             
         #获取当前运行软件分区
         try:
@@ -363,24 +368,24 @@ class NE:
         except:
             controlDebug("parsing current soft partion  err\n")
             self.telnetManagePlatform.logout()
-            self.logging.error("**解析当前运行软件分区出错")
-            self.logging.info("**断开管理平台telnet连接")            
-            self.logging.info("由于意外，终止检查网元信息")
+            self.logging.error(u"**解析当前运行软件分区出错")
+            self.logging.info(u"**断开管理平台telnet连接")            
+            self.logging.info(u"由于意外，终止检查网元信息")
             return PYPARSING_CURRENT_SOFT_PARTITION_ERR   
         
-        self.logging.info("**获取当前运行版本分区信息为:%s"%(self.currentSoftPartition))
+        self.logging.info(u"**获取当前运行版本分区信息为:%s"%(self.currentSoftPartition))
         
         #退出管理平台telnet            
         self.telnetManagePlatform.logout()
-        self.logging.info("**断开管理平台telnet连接") 
+        self.logging.info(u"**断开管理平台telnet连接") 
 
         #接入平台登入操作
-        self.logging.info("**telnet接入平台")
+        self.logging.info(u"**telnet接入平台")
         result = self.telnetAccessPlatform.login(self.accessUserName,self.accessPassword)
         if result != TELNET_OK:
             controlDebug("can't login ac access platform: %s\n"%(self.neIp))
-            self.logging.error("**telnet接入平台失败: 错误码为:%d"%(result))
-            self.logging.info("由于意外，终止检查网元信息")
+            self.logging.error(u"**telnet接入平台失败: 错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止检查网元信息")
             return TELNET_ACCESS_PLATFORM_ERR
 
         self.telnetAccessPlatform.setCommand(self.telnet_access_commandPromtDict)
@@ -388,14 +393,14 @@ class NE:
         
         #下发命令查看热备状态
         #主要是获取网元主备情况，这里还没有完成
-        self.logging.info("**获取热备状态信息")
+        self.logging.info(u"**获取热备状态信息")
         result=self.telnetAccessPlatform.runCommand(self.telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL])
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]))
             self.telnetAccessPlatform.logout()
-            self.logging.info("**获取热备状态信息失败，错误码为:%d"%(result))
-            self.logging.info("**断开接入平台telnet连接") 
-            self.logging.info("由于意外，终止检查网元信息")
+            self.logging.info(u"**获取热备状态信息失败，错误码为:%d"%(result))
+            self.logging.info(u"**断开接入平台telnet连接") 
+            self.logging.info(u"由于意外，终止检查网元信息")
             return GET_HOTSTANDBY_STATUS_ERR 
         
         #
@@ -403,10 +408,10 @@ class NE:
         #       
         
         #退出接入平台telnet 
-        self.logging.info("**断开接入平台telnet连接") 
+        self.logging.info(u"**断开接入平台telnet连接") 
         self.telnetAccessPlatform.logout()        
         self.neState=u"网元检查正常"
-        self.logging.info("完成检查网元信息") 
+        self.logging.info(u"完成检查网元信息") 
         return NE_OK
         
         
@@ -414,37 +419,37 @@ class NE:
         '''
                      管理平台升级软件操作  
         '''
-        self.logging.info("开始升级软件操作，软件版本:%s,目标分区为:%s"%(fileName,softPartition)) 
+        self.logging.info(u"开始升级软件操作，软件版本:%s,目标分区为:%s"%(fileName,softPartition)) 
         
         if SOFT_PARTITION.has_key(softPartition):
             pass
         else:
-            self.logging.error("**目标分区参数错误")
-            self.logging.info("由于意外，终止升级软件操作")
+            self.logging.error(u"**目标分区参数错误")
+            self.logging.info(u"由于意外，终止升级软件操作")
             return SOFT_PARTITION_PARA_ERR
                     
         
-        self.logging.info("**telnet管理平台")
+        self.logging.info(u"**telnet管理平台")
         result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
         if result != TELNET_OK:
             controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
-            self.logging.error("**telnet管理平台失败: 错误码为:%d"%(result))
-            self.logging.info("由于意外，终止升级软件操作")
+            self.logging.error(u"**telnet管理平台失败: 错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止升级软件操作")
             return TELNET_MANAGE_PLATFORM_ERR        
         
         self.telnetManagePlatform.setCommand(self.telnet_manage_commandPromt_dict)
         
         #通过ls命令,查询\root目录下是否存在文件名与函数传进来的fileName一致
-        self.logging.info("**检查升级目录下是否存在升级文件:%s"%(fileName))
+        self.logging.info(u"**检查升级目录下是否存在升级文件:%s"%(fileName))
         result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[LS], self.softPath)
-        self.logging.info("**获取升级目录下文件信息")
+        self.logging.info(u"**获取升级目录下文件信息")
         self.logging.info(self.telnetManagePlatform.commandResult)
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[LS]))
-            self.logging.error("**获取升级目录文件失败，错误码为%d"%(result))
+            self.logging.error(u"**获取升级目录文件失败，错误码为%d"%(result))
             self.telnetManagePlatform.logout()
-            self.logging.info("**断开管理平台telnet连接") 
-            self.logging.info("由于意外，终止升级软件操作")
+            self.logging.info(u"**断开管理平台telnet连接") 
+            self.logging.info(u"由于意外，终止升级软件操作")
             return RUN_LS_COMMAND_ERR
         
         
@@ -453,53 +458,53 @@ class NE:
             fileNamePyparsingstr=CaselessLiteral(fileName)
             result=fileNamePyparsingstr.searchString(self.telnetManagePlatform.commandResult,True)
             if result[0][0]!=fileName:
-                self.logging.error("**当前升级目录下不存在升级文件%s"%(fileName))
+                self.logging.error(u"**当前升级目录下不存在升级文件%s"%(fileName))
                 self.telnetManagePlatform.logout()
-                self.logging.info("**断开管理平台telnet连接") 
-                self.logging.info("由于意外，终止升级软件操作")
+                self.logging.info(u"**断开管理平台telnet连接") 
+                self.logging.info(u"由于意外，终止升级软件操作")
                 return GET_UPDATE_FILE_ERR
             self.updateFile = fileName
         except:
             controlDebug("1 parsing root softfile err\n")
-            self.logging.error("**解析升级目录下的文件信息失败")
+            self.logging.error(u"**解析升级目录下的文件信息失败")
             self.telnetManagePlatform.logout()
-            self.logging.info("**断开管理平台telnet连接") 
-            self.logging.info("由于意外，终止升级软件操作")
+            self.logging.info(u"**断开管理平台telnet连接") 
+            self.logging.info(u"由于意外，终止升级软件操作")
             return PYPARSING_UPDATE_FILE_ERR  
         
          
         #下发upgrade命令
-        self.logging.info("**下发upgrade命令：%s"%(self.telnet_manage_command_dict[UPGRADE]+SOFT_PARTITION[softPartition])) 
+        self.logging.info(u"**下发upgrade命令：%s"%(self.telnet_manage_command_dict[UPGRADE]+SOFT_PARTITION[softPartition])) 
         result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[UPGRADE], SOFT_PARTITION[softPartition])
         self.logging.info(self.telnetManagePlatform.commandResult)
         
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[UPGRADE]))
-            self.logging.error("**upgrade命令执行失败,错误码为:%d"%(result))
+            self.logging.error(u"**upgrade命令执行失败,错误码为:%d"%(result))
             self.telnetManagePlatform.logout()
-            self.logging.info("**断开管理平台telnet连接")
-            self.logging.info("由于意外，终止升级软件操作")
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止升级软件操作")
             return RUN_UPGRADE_COMMAND_ERR
         
         #下发yes确认
-        self.logging.info("**下发确认:%s"%(self.telnet_manage_command_dict[UPGRADE_YES]))
+        self.logging.info(u"**下发确认:%s"%(self.telnet_manage_command_dict[UPGRADE_YES]))
         result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[UPGRADE_YES])
         self.logging.info(self.telnetManagePlatform.commandResult)
         
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[UPGRADE_YES]))
-            self.logging.error("**yes确认命令执行失败,错误码为:%d"%(result))
+            self.logging.error(u"**yes确认命令执行失败,错误码为:%d"%(result))
             self.telnetManagePlatform.logout()
-            self.logging.info("**断开管理平台telnet连接")
-            self.logging.info("由于意外，终止升级软件操作")
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止升级软件操作")
             return RUN_UPGRADE_CONFIRM_COMMAND_ERR
         
         
         controlDebug(self.telnetManagePlatform.commandResult)
         
-        self.logging.info("**断开管理平台telnet连接")
+        self.logging.info(u"**断开管理平台telnet连接")
         self.telnetManagePlatform.logout()
-        self.logging.info("完成升级软件操作")
+        self.logging.info(u"完成升级软件操作")
         self.neState=u"上传软件完毕"
         return NE_OK
     
@@ -508,87 +513,87 @@ class NE:
     def activeSoft(self,softPartition=None):
         '''管理平台激活软件操作'''
         
-        self.logging.info("开始激活软件操作")
+        self.logging.info(u"开始激活软件操作")
         if SOFT_PARTITION.has_key(softPartition):
             pass
         else:
-            self.logging.error("**目标分区参数错误")
-            self.logging.info("由于意外，终止升级软件操作")
+            self.logging.error(u"**目标分区参数错误")
+            self.logging.info(u"由于意外，终止升级软件操作")
             return SOFT_PARTITION_PARA_ERR
         
-        self.logging.info("**telnet管理平台")
+        self.logging.info(u"**telnet管理平台")
         result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
         if result != TELNET_OK:
             controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
-            self.logging.error("**telnet管理平台失败: 错误码为:%d"%(result))
-            self.logging.info("由于意外，终止激活软件操作")            
+            self.logging.error(u"**telnet管理平台失败: 错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止激活软件操作")            
             return TELNET_MANAGE_PLATFORM_ERR        
         
         self.telnetManagePlatform.setCommand(self.telnet_manage_commandPromt_dict)   
         
         #下发active命令
-        self.logging.info("**下发软件激活命令:%s"%(self.telnet_manage_command_dict[ACTIVE]+SOFT_PARTITION[softPartition]))
+        self.logging.info(u"**下发软件激活命令:%s"%(self.telnet_manage_command_dict[ACTIVE]+SOFT_PARTITION[softPartition]))
         result = self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[ACTIVE], SOFT_PARTITION[softPartition])
         self.logging.info(self.telnetManagePlatform.commandResult)
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[ACTIVE]))
             self.telnetManagePlatform.logout()
-            self.logging.error("**软件激活命令执行失败，错误码为:%d"%(result))
-            self.logging.info("**断开管理平台telnet连接")
-            self.logging.info("由于意外，终止升级软件操作")
+            self.logging.error(u"**软件激活命令执行失败，错误码为:%d"%(result))
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止升级软件操作")
             return RUN_ACTIVE_COMMAND_ERR
         
         self.telnetManagePlatform.logout()
-        self.logging.info("**断开管理平台telnet连接")
-        self.logging.info("完成激活软件操作")
+        self.logging.info(u"**断开管理平台telnet连接")
+        self.logging.info(u"完成激活软件操作")
         return NE_OK
 
 
     def reboot(self):
         '''管理平台复位操作'''
         
-        self.logging.info("开始管理平台复位操作")
+        self.logging.info(u"开始管理平台复位操作")
         
-        self.logging.info("**telnet管理平台")
+        self.logging.info(u"**telnet管理平台")
         result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
         if result != TELNET_OK:
             controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
-            self.logging.error("**telnet管理平台失败: 错误码为:%d"%(result))
-            self.logging.info("由于意外，终止激活软件操作")            
+            self.logging.error(u"**telnet管理平台失败: 错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止激活软件操作")            
             return TELNET_MANAGE_PLATFORM_ERR        
         
         self.telnetManagePlatform.setCommand(self.telnet_manage_commandPromt_dict)   
         
         #下发复位命令
-        self.logging.info("**下发复位命令:%s"%(self.telnet_manage_command_dict[REBOOT]))
+        self.logging.info(u"**下发复位命令:%s"%(self.telnet_manage_command_dict[REBOOT]))
         result = self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[REBOOT])    
         self.logging.info(self.telnetManagePlatform.commandResult)
             
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[REBOOT]))
             self.telnetManagePlatform.logout()
-            self.logging.error("**复位命令执行失败，错误码为:%d"%(result))
-            self.logging.info("**断开管理平台telnet连接")
-            self.logging.info("由于意外，终止升级软件操作")
+            self.logging.error(u"**复位命令执行失败，错误码为:%d"%(result))
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止升级软件操作")
 
             return RUN_REBOOT_COMMAND_ERR 
     
         #下发yes确认
-        self.logging.info("**下发复位确认命令:%s"%(self.telnet_manage_command_dict[REBOOT_YES]))
+        self.logging.info(u"**下发复位确认命令:%s"%(self.telnet_manage_command_dict[REBOOT_YES]))
         result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[REBOOT_YES])
         self.logging.info(self.telnetManagePlatform.commandResult)
         
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[REBOOT_YES]))
             self.telnetManagePlatform.logout()
-            self.logging.error("**复位确认命令执行失败，错误码为:%d"%(result))
-            self.logging.info("**断开管理平台telnet连接")
-            self.logging.info("由于意外，终止升级软件操作")
+            self.logging.error(u"**复位确认命令执行失败，错误码为:%d"%(result))
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止升级软件操作")
             return RUN_REBOOT_CONFIRM_COMMAND_ERR
         
         controlDebug(self.telnetManagePlatform.commandResult)
-        self.logging.info("**断开管理平台telnet连接")
-        self.logging.info("完成管理平台复位操作")
+        self.logging.info(u"**断开管理平台telnet连接")
+        self.logging.info(u"完成管理平台复位操作")
         return NE_OK
     
     
@@ -630,15 +635,16 @@ class NE:
             cmd ="ping -c 4 %s"%self.neIp
         elif platform.system() == "Windows":     
             cmd ="ping -n 4 %s"%self.neIp
-             
+              
         outFile=self.neIp+"_ping.temp"
         ret =subprocess.call(cmd,shell=True,stdout=open(outFile,'w'),stderr=subprocess.STDOUT)
-        
+
         controlDebug( "ping %s ret: %d"%(self.neIp,ret))
         if ret == 0 :
             return  NE_OK   
         else:
             return  NE_DOWN      
+        
 
     def telnetManagePlatformTest(self):
         result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
@@ -663,60 +669,60 @@ class NE:
         loop =1
         result=NE_DOWN
         
-        self.logging.info("开始网元复位后连接测试")
+        self.logging.info(u"开始网元复位后连接测试")
         
         #ping测试, 测试10次, 间隔10秒, 只要有1次成功,退出测试
-        self.logging.info("**ping测试")
+        self.logging.info(u"**ping测试")
         while loop!=11:
             result=self.pingTest()
             if result == NE_OK:
-                self.logging.info("**第%d次测试，测试成功"%(loop))
+                self.logging.info(u"**第%d次测试，测试成功"%(loop))
                 loop=11
             else:
-                self.logging.warning("**第%d次测试，测试失败"%(loop))
+                self.logging.warning(u"**第%d次测试，测试失败"%(loop))
                 loop=loop+1
                     
             time.sleep(10)
         
         #如果ping不同，则认为网元失连，返回NE_DOWN    
         if result != NE_OK:
-            self.logging.warning("连续100秒无法ping通网元，网元状态不正常")
+            self.logging.warning(u"连续100秒无法ping通网元，网元状态不正常")
             return NE_DOWN
         
         #管理平台测试，测试3次，间隔10秒，只要有1次成功,退出测试
         #加上telnet本身10秒超时，这里每次测试应该是20秒，
-        self.logging.info("**telnet管理平台测试")
+        self.logging.info(u"**telnet管理平台测试")
         loop=1     
         while loop!=4:
             result=self.telnetManagePlatformTest()
             if result == NE_OK:
-                self.logging.info("**第%d次测试，测试成功"%(loop))
+                self.logging.info(u"**第%d次测试，测试成功"%(loop))
                 loop=4
             else:
-                self.logging.warning("**第%d次测试，测试失败"%(loop))
+                self.logging.warning(u"**第%d次测试，测试失败"%(loop))
                 loop=loop+1    
             time.sleep(10)
          
         if result!= NE_OK:
-            self.logging.warning("连续3次无法telnet管理平台，网元状态不正常")
+            self.logging.warning(u"连续3次无法telnet管理平台，网元状态不正常")
             return  NE_DOWN   
 
         #接入平台测试，测试3次，间隔10秒，只要有1次成功,退出测试
         #加上telnet本身10秒超时，这里每次测试应该是20秒，
-        self.logging.info("**telnet接入平台测试")
+        self.logging.info(u"**telnet接入平台测试")
         loop=1     
         while loop!=4:
             result=self.telnetManagePlatformTest()
             if result == NE_OK:
-                self.logging.info("**第%d次测试，测试成功"%(loop))
+                self.logging.info(u"**第%d次测试，测试成功"%(loop))
                 loop=4
             else:
-                self.logging.warning("**第%d次测试，测试失败"%(loop))
+                self.logging.warning(u"**第%d次测试，测试失败"%(loop))
                 loop=loop+1    
             time.sleep(10)
          
         if result!= NE_OK:
-            self.logging.warning("连续3次无法telnet接入平台，网元状态不正常")
+            self.logging.warning(u"连续3次无法telnet接入平台，网元状态不正常")
             return  NE_DOWN
                     
         return NE_OK
@@ -724,7 +730,7 @@ class NE:
     def afterRebootCheck(self,versionName):
         '''复位后软件版本和配置文件校验'''
         
-        self.logging.info("开始网元复位后版本和配置校验")
+        self.logging.info(u"开始网元复位后版本和配置校验")
         _softwareVersion = self.softwareVersion
         _hardwareVersion = self.hardwareVersion
         _currentSoftPartition = self.currentSoftPartition
@@ -741,35 +747,35 @@ class NE:
         
         #判断升级的版本是否是预期的版本
         if versionName != self.softwareVersion:
-            self.logging.warning("升级后的版本%s与预期%s不符"%(self.softwareVersion,versionName))
+            self.logging.warning(u"升级后的版本%s与预期%s不符"%(self.softwareVersion,versionName))
             return UPDATE_VERSION_ERR
         else:
-            self.logging.info("升级后的版本%s与预期%s一致"%(self.softwareVersion,versionName))
+            self.logging.info(u"升级后的版本%s与预期%s一致"%(self.softwareVersion,versionName))
         
         #判断升级的路径是否是预期的路径        
 #         if _willUpdateSoftPartition != self.currentSoftPartition:
-#             self.logging.warning("升级后的软件路径%s与预期不符%s"%(self.currentSoftPartition,_willUpdateSoftPartition))
+#             self.logging.warning(u"升级后的软件路径%s与预期不符%s"%(self.currentSoftPartition,_willUpdateSoftPartition))
 #             return UPDATE_PARTITION_ERR 
                 
         #比较升级前后保留配置文件数目和名称是否一致        
         dirCmpObject =filecmp.dircmp(_saveConfigPath,self.saveConfigPath)        
         if dirCmpObject.diff_files !=[]:
-            self.logging.warning("升级前后保留的配置文件不一致")
-            self.logging.warning("升级前后保留的配置文件路径:%s",_saveConfigPath)
-            self.logging.warning("升级前后保留的配置文件路径:%s",self.saveConfigPath)
-            self.logging.warning("不同文件为: %s",dirCmpObject.diff_files)
+            self.logging.warning(u"升级前后保留的配置文件不一致")
+            self.logging.warning(u"升级前后保留的配置文件路径:%s",_saveConfigPath)
+            self.logging.warning(u"升级前后保留的配置文件路径:%s",self.saveConfigPath)
+            self.logging.warning(u"不同文件为: %s",dirCmpObject.diff_files)
             return CONFIG_FILE_DIFF
         
         #比较升级前后保留的配置文件内容是否一致
         result = filecmp.cmpfiles(_saveConfigPath,self.saveConfigPath,dirCmpObject.common)
         if result[1]!=[] or result[2]!=[]:
-            self.logging.warning("升级前后保留的配置文件内容不一致")
-            self.logging.warning("升级前后保留的配置文件路径:%s",_saveConfigPath)
-            self.logging.warning("升级前后保留的配置文件路径:%s",self.saveConfigPath)
-            self.logging.warning("不同文件为: %s",result[1:3])
+            self.logging.warning(u"升级前后保留的配置文件内容不一致")
+            self.logging.warning(u"升级前后保留的配置文件路径:%s",_saveConfigPath)
+            self.logging.warning(u"升级前后保留的配置文件路径:%s",self.saveConfigPath)
+            self.logging.warning(u"不同文件为: %s",result[1:3])
             return CONFIG_FILE_CONTEXT_DIFF    
         
-        self.logging.info("完成网元复位后版本和配置校验")   
+        self.logging.info(u"完成网元复位后版本和配置校验")   
         return NE_OK
                         
     def __enterSuperMode(self):
@@ -792,48 +798,48 @@ class NE:
         '''
                      保留当前运行配置
         '''
-        self.logging.info("开始接入平台配置保存操作")
+        self.logging.info(u"开始接入平台配置保存操作")
         
         #接入平台登入操作
-        self.logging.info("**telnet接入平台")
+        self.logging.info(u"**telnet接入平台")
         result = self.telnetAccessPlatform.login(self.accessUserName,self.accessPassword)
         if result != TELNET_OK:
             controlDebug("can't login ac access platform: %s\n"%(self.neIp))
-            self.logging.error("**telnet接入平台失败: 错误码为:%d"%(result))
-            self.logging.info("由于意外，终止接入平台配置保存操作")            
+            self.logging.error(u"**telnet接入平台失败: 错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止接入平台配置保存操作")            
             return TELNET_ACCESS_PLATFORM_ERR
 
         self.telnetAccessPlatform.setCommand(self.telnet_access_commandPromtDict)
         
         #进入super模式
-        self.logging.info("**进入接入平台super模式") 
+        self.logging.info(u"**进入接入平台super模式") 
         result = self.__enterSuperMode()
         
         if result != NE_OK :
             controlDebug("enter super mode err\n")
             self.telnetAccessPlatform.logout()
-            self.logging.error("**进入接入平台super模式错误，错误码为:%d"%(result))
-            self.logging.info("**断开接入平台telnet连接") 
-            self.logging.info("由于意外，终止接入平台配置保存操作")
+            self.logging.error(u"**进入接入平台super模式错误，错误码为:%d"%(result))
+            self.logging.info(u"**断开接入平台telnet连接") 
+            self.logging.info(u"由于意外，终止接入平台配置保存操作")
             return result   
         
         #下发配置保留命令
-        self.logging.info("**下发配置保留命令")
+        self.logging.info(u"**下发配置保留命令")
         result=self.telnetAccessPlatform.runCommand(self.telnet_access_comandDict[COPY_CONFIG])
         self.logging.info(self.telnetAccessPlatform.commandResult)
         
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_access_comandDict[COPY_CONFIG]))
             self.telnetAccessPlatform.logout()
-            self.logging.info("**断开接入平台telnet连接")
-            self.logging.info("由于意外，终止接入平台配置保存操作")
+            self.logging.info(u"**断开接入平台telnet连接")
+            self.logging.info(u"由于意外，终止接入平台配置保存操作")
             return GET_HOTSTANDBY_STATUS_ERR
         
         
         #退出接入平台telnet 
         self.telnetAccessPlatform.logout()   
-        self.logging.info("**断开接入平台telnet连接")     
-        self.logging.info("完成接入平台配置保存操作")
+        self.logging.info(u"**断开接入平台telnet连接")     
+        self.logging.info(u"完成接入平台配置保存操作")
         self.neState="保留网元配置成功"
         return NE_OK
     
@@ -849,12 +855,12 @@ class NE:
         if os.path.exists(self.saveConfigPath) == False:
             os.mkdir(self.saveConfigPath)
 
-        self.logging.info("开始保留网元配置文件操作")
-        self.logging.info("**ftp连接管理平台")
+        self.logging.info(u"开始保留网元配置文件操作")
+        self.logging.info(u"**ftp连接管理平台")
         result = self.ftpManagePlatform.login(self.manageUserName, self.managePassword)
         if result != FTP_OK:
-            self.logging.error("**ftp连接管理平台失败，错误码为:%d"%(result))
-            self.logging.info("由于意外，终止保留网元配置文件")            
+            self.logging.error(u"**ftp连接管理平台失败，错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止保留网元配置文件")            
             return FTP_LOGIN_MANAGE_PLATFORM_ERR
         
         #下载网元上的配置文件，以备不时之需
@@ -864,28 +870,28 @@ class NE:
             if self.checkFileIsExist(fileName, self.ne_config_file_dict[fileName])== FILE_IS_EXIST:
                 result = self.ftpManagePlatform.getFile(self.ne_config_file_dict[fileName]+fileName , fileName , self.saveConfigPath)
                 if result != FTP_OK:
-                    self.logging.error("**保留配置文件:%s,失败"%(self.ne_config_file_dict[fileName]+fileName))
+                    self.logging.error(u"**保留配置文件:%s,失败"%(self.ne_config_file_dict[fileName]+fileName))
                     self.noSavedConfigFile.append(fileName)
                 else:
-                    self.logging.info("**保留配置文件:%s,成功"%(self.ne_config_file_dict[fileName]+fileName))
+                    self.logging.info(u"**保留配置文件:%s,成功"%(self.ne_config_file_dict[fileName]+fileName))
                     self.savedConfigFile.append(fileName)
             else:
-                self.logging.warn("**没有配置文件:%s"%(self.ne_config_file_dict[fileName]+fileName))
+                self.logging.warn(u"**没有配置文件:%s"%(self.ne_config_file_dict[fileName]+fileName))
                 controlDebug(fileName + "is not exist")
                  
-        self.logging.info("**ftp登出管理平台")         
+        self.logging.info(u"**ftp登出管理平台")         
         result = self.ftpManagePlatform.logout()
         if result != FTP_OK:
-            self.logging.error("**ftp登出管理平台失败，错误码为:%d"%(result))
-            self.logging.info("由于意外，终止保留网元配置文件")
+            self.logging.error(u"**ftp登出管理平台失败，错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止保留网元配置文件")
             return FTP_LOGOUT_MANAGE_PLATFORM_ERR 
                         
         if self.noSavedConfigFile != []:
-            self.logging.err("**没有配置文件被保存，请检查")
-            self.logging.info("由于意外，终止保留网元配置文件")
+            self.logging.err(u"**没有配置文件被保存，请检查")
+            self.logging.info(u"由于意外，终止保留网元配置文件")
             return SOME_CONFIG_FILE_NOT_SAVED       
         
-        self.logging.info("完成保留网元配置文件操作")                  
+        self.logging.info(u"完成保留网元配置文件操作")                  
         return NE_OK
 
     
@@ -894,32 +900,32 @@ class NE:
         FTP上传版本文件
         '''
         
-        self.logging.info("开始上传升级文件操作")
+        self.logging.info(u"开始上传升级文件操作")
         
-        self.logging.info("**ftp连接管理平台")
+        self.logging.info(u"**ftp连接管理平台")
         result = self.ftpManagePlatform.login(self.manageUserName, self.managePassword)
         
         if result != FTP_OK:
-            self.logging.error("**ftp连接管理平台失败，错误码为:%d"%(result))
-            self.logging.info("由于意外，终止上传升级文件操作")
+            self.logging.error(u"**ftp连接管理平台失败，错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止上传升级文件操作")
             return FTP_LOGIN_MANAGE_PLATFORM_ERR
                 
-        self.logging.info("**ftp上传文件 从本地目录:%s,上传文件:%s,至目标目录%s"%(localPath,versionFile,self.softPath))        
+        self.logging.info(u"**ftp上传文件 从本地目录:%s,上传文件:%s,至目标目录%s"%(localPath,versionFile,self.softPath))        
         result = self.ftpManagePlatform.putFile(versionFile, localPath, self.softPath)
         if result != FTP_OK:
             self.ftpManagePlatform.logout()
-            self.logging.error("**ftp上传文件失败，错误码为:%d"%(result))
-            self.logging.info("由于意外，终止上传升级文件操作")
+            self.logging.error(u"**ftp上传文件失败，错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止上传升级文件操作")
             return FTP_PUT_SOFT_MANAGE_PLATFORM_ERR
         
-        self.logging.info("**ftp登出管理平台")
+        self.logging.info(u"**ftp登出管理平台")
         result = self.ftpManagePlatform.logout()
         if result != FTP_OK:
-            self.logging.error("**ftp登出管理平台失败，错误码为:%d"%(result))
-            self.logging.info("由于意外，终止上传升级文件操作")
+            self.logging.error(u"**ftp登出管理平台失败，错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止上传升级文件操作")
             return FTP_LOGOUT_MANAGE_PLATFORM_ERR 
 
-        self.logging.info("完成上传升级文件操作")                        
+        self.logging.info(u"完成上传升级文件操作")                        
         return NE_OK
         
         
@@ -981,7 +987,6 @@ class updateConfig:
         try:
             self.config.read(configFile)
             for section in self.config.sections():
-#                 print section
                 if str(section) == 'NE Section':
                     self.versionfile=self.config.get(section,"versionfile")
                 else:    
@@ -1032,10 +1037,6 @@ class updateConfig:
         try:  
             if configFile==None:
                 configFile=self.configFile
-            print "******************"
-            print configFile
-            print self.config
-            print "******************"    
             with open(configFile, 'wb') as _configFile:
                 self.config.write(_configFile)
             self.configFile= configFile

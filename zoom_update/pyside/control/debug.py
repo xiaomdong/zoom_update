@@ -12,10 +12,10 @@ import re
 #from config import *
 
 logFlag=0
-printdebugFlag = 1
+printdebugFlag = 0
 uiDebugFlag = 0
 controlDebugFlag = 0
-protocolFlag = 1
+protocolFlag = 0
 
 telnetFlag = 0
 ftpFlag = 0
