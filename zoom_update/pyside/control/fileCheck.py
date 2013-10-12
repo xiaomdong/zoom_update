@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 '''
-Created on 2013��9��13��
+Created on 2013-9-13
 
 @author: xd
 '''

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>825</width>
-    <height>512</height>
+    <width>1030</width>
+    <height>599</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -20,7 +20,7 @@
    <string>AC升级工具</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_2">
+   <layout class="QGridLayout" name="gridLayout_3">
     <item row="0" column="0">
      <widget class="QGroupBox" name="groupBox_2">
       <property name="title">
@@ -91,7 +91,7 @@
         </spacer>
        </item>
        <item row="2" column="0" colspan="2">
-        <widget class="QTableView" name="tableViewNet"/>
+        <widget class="QTableView" name="tableViewNe"/>
        </item>
       </layout>
      </widget>
@@ -101,7 +101,7 @@
       <property name="title">
        <string>升级操作</string>
       </property>
-      <layout class="QGridLayout" name="gridLayout_3">
+      <layout class="QGridLayout" name="gridLayout_2">
        <item row="0" column="0">
         <widget class="QPushButton" name="pushButtonCheckNe">
          <property name="text">
@@ -109,8 +109,15 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="1" rowspan="2">
-        <widget class="QTextEdit" name="textEditInformation"/>
+       <item row="0" column="1" rowspan="3">
+        <widget class="QTextEdit" name="textEditInformation">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>120</height>
+          </size>
+         </property>
+        </widget>
        </item>
        <item row="1" column="0">
         <widget class="QPushButton" name="pushButtonUpdateAll">
@@ -119,10 +126,18 @@
          </property>
         </widget>
        </item>
+       <item row="2" column="0">
+        <widget class="QPushButton" name="pushButtonCancel">
+         <property name="text">
+          <string>取消操作</string>
+         </property>
+        </widget>
+       </item>
       </layout>
       <zorder>pushButtonCheckNe</zorder>
       <zorder>pushButtonUpdateAll</zorder>
       <zorder>textEditInformation</zorder>
+      <zorder>pushButtonCancel</zorder>
      </widget>
     </item>
    </layout>
@@ -132,7 +147,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>825</width>
+     <width>1030</width>
      <height>19</height>
     </rect>
    </property>
@@ -173,16 +188,6 @@
   <action name="actionSaveConfig">
    <property name="text">
     <string>保留配置</string>
-   </property>
-  </action>
-  <action name="actionChinese">
-   <property name="text">
-    <string>中文</string>
-   </property>
-  </action>
-  <action name="actionEnglish">
-   <property name="text">
-    <string>英文</string>
    </property>
   </action>
   <action name="actionSaveAs">

@@ -42,9 +42,9 @@ showColumn  = {NE_NAME           : 0  ,
               NE_IP              : 1  ,
               SOFTWARE_VERSION   : 2  ,    
               HARDWARE_VERSION   : 3  ,
-              MASTER_SLAVE_STATE : 4  ,     
-              NE_STATE           : 5  ,
-              UPDATE_STATE       : 6  ,
+              #MASTER_SLAVE_STATE : 4  ,     
+              NE_STATE           : 4  ,
+              UPDATE_STATE       : 5  ,
              }
 
 class NESignal(QObject):
@@ -340,11 +340,28 @@ class updateWindow(QMainWindow):
         self.ui.setupUi(self)
 
         self.netModel = QStandardItemModel()
-        self.ui.tableViewNet.setItemDelegate(updateProgress())
+        self.ui.tableViewNe.setItemDelegate(updateProgress())
         
         for key in showColumn.keys():
             self.netModel.setHorizontalHeaderItem(showColumn[key], QStandardItem(key))
-        self.ui.tableViewNet.setModel(self.netModel)
+        
+#         self.ui.tableViewNe.setColumnWidth(showColumn[SOFTWARE_VERSION],50)
+#         self.ui.tableViewNe.setColumnWidth(showColumn[NE_STATE],50)
+#         self.ui.tableViewNe.setColumnWidth(showColumn[UPDATE_STATE],100)
+        print self.ui.tableViewNe.columnWidth(showColumn[SOFTWARE_VERSION])
+        print self.ui.tableViewNe.columnWidth(showColumn[NE_STATE])
+        print self.ui.tableViewNe.columnWidth(showColumn[UPDATE_STATE])
+        
+        
+            
+        self.ui.tableViewNe.setModel(self.netModel)
+        print self.ui.tableViewNe.columnWidth(showColumn[SOFTWARE_VERSION])
+        print self.ui.tableViewNe.columnWidth(showColumn[NE_STATE])
+        print self.ui.tableViewNe.columnWidth(showColumn[UPDATE_STATE])
+
+        self.ui.tableViewNe.setColumnWidth(showColumn[SOFTWARE_VERSION],150)
+        self.ui.tableViewNe.setColumnWidth(showColumn[NE_STATE],150)
+        self.ui.tableViewNe.setColumnWidth(showColumn[UPDATE_STATE],360)        
        
         QObject.connect(self.ui.pushButtonAddNe, SIGNAL("clicked()"), self, SLOT("addNe()"))
         QObject.connect(self.ui.pushButtonDelNe, SIGNAL("clicked()"), self, SLOT("delNe()"))
@@ -419,9 +436,9 @@ class updateWindow(QMainWindow):
         
         self.addNEAct = QAction(self)
         self.addNEAct.setText(u"添加网元")
-
-        self.delNEAct = QAction(self)
-        self.delNEAct.setText(u"删除网元")
+# 
+#         self.delNEAct = QAction(self)
+#         self.delNEAct.setText(u"删除网元")
         
         self.selectAllAct = QAction(self)
         self.selectAllAct.setText(u"全部选中")
@@ -429,40 +446,42 @@ class updateWindow(QMainWindow):
         self.selectNoneAct = QAction(self)
         self.selectNoneAct.setText(u"全部不选")
         
-        self.ui.tableViewNet.addAction(self.addNEAct)
-        self.ui.tableViewNet.addAction(self.delNEAct)
-        self.ui.tableViewNet.addAction(self.selectAllAct)
-        self.ui.tableViewNet.addAction(self.selectNoneAct)
-
+        self.ui.tableViewNe.addAction(self.addNEAct)
+#         self.ui.tableViewNe.addAction(self.delNEAct)
+        self.ui.tableViewNe.addAction(self.selectAllAct)
+        self.ui.tableViewNe.addAction(self.selectNoneAct)
+ 
         QObject.connect(self.addNEAct, SIGNAL("activated()"), self, SLOT("addNEaction()"))
-        QObject.connect(self.delNEAct, SIGNAL("activated()"), self, SLOT("delNEAction()"))              
+#         QObject.connect(self.delNEAct, SIGNAL("activated()"), self, SLOT("delNEAction()"))              
         QObject.connect(self.selectAllAct, SIGNAL("activated()"), self, SLOT("selectAllNE()"))
         QObject.connect(self.selectNoneAct, SIGNAL("activated()"), self, SLOT("selectNoneNE()"))
         
-        self.ui.tableViewNet.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.ui.tableViewNe.setContextMenuPolicy(Qt.ActionsContextMenu)
     
     def addNEaction(self):
-        
-        index = self.ui.tableViewNet.selectionModel().currentIndex()
-        print "select "
-        print index
-        print index.row()
+        print self.ui.tableViewNe.actions()
+        print self.NEs
+        print self.NEthreads
+#         index = self.ui.tableViewNe.selectionModel().currentIndex()
+#         print "select "
+#         print index
+#         print index.row()
 #         print index.parent
-#         print self.ui.tableViewNet.selectionModel()
-#         model=self.ui.tableViewNet.selectionModel()
-#         print dir(self.ui.tableViewNet.selectionModel())
+#         print self.ui.tableViewNe.selectionModel()
+#         model=self.ui.tableViewNe.selectionModel()
+#         print dir(self.ui.tableViewNe.selectionModel())
 #         print model.Rows
 #         print model.Select
 #         print model.selectedRows()
 #         print model.Current
 # 
 #                 
-#         index = self.ui.tableViewNet.currentIndex()
+#         index = self.ui.tableViewNe.currentIndex()
 #         print "current " 
 #         print index
 #         print index.parent
-#         print self.ui.tableViewNet.model()
-#         model =self.ui.tableViewNet.model()
+#         print self.ui.tableViewNe.model()
+#         model =self.ui.tableViewNe.model()
         
         
 #         row = model.rowCount(index.parent())
@@ -472,8 +491,8 @@ class updateWindow(QMainWindow):
         self.clearConfig() 
      
     def selectAllNE(self):
-        index = self.ui.tableViewNet.currentIndex()
-        model =self.ui.tableViewNet.model()
+        index = self.ui.tableViewNe.currentIndex()
+        model =self.ui.tableViewNe.model()
         print type(model)
         rowCount = model.rowCount(index.parent())
         for row in range(0,rowCount):
@@ -482,8 +501,8 @@ class updateWindow(QMainWindow):
             print item.checkState()
     
     def selectNoneNE(self):
-        index = self.ui.tableViewNet.currentIndex()
-        model =self.ui.tableViewNet.model()
+        index = self.ui.tableViewNe.currentIndex()
+        model =self.ui.tableViewNe.model()
         rowCount = model.rowCount(index.parent())
         for row in range(0,rowCount):
             item=model.item(row, showColumn[NE_NAME])
@@ -522,7 +541,32 @@ class updateWindow(QMainWindow):
             if thread.isRunning()==False:
                 return False
         return True    
-            
+        
+    def setUIstatusDisable(self):
+        self.ui.actionImportConfig.setDisabled(True)
+        self.ui.actionSaveAs.setDisabled(True)
+        self.ui.actionSaveConfig.setDisabled(True)
+        self.ui.pushButtonAddNe.setDisabled(True)
+        self.ui.pushButtonDelNe.setDisabled(True)
+        self.ui.pushButtonCheckNe.setDisabled(True)
+        self.ui.pushButtonUpdateAll.setDisabled(True)
+        self.ui.pushButtonAddVersionFile.setDisabled(True)
+        for action in self.ui.tableViewNe.actions():
+            action.setDisabled(True)
+        
+
+    def setUIstatusEnable(self):
+        self.ui.actionImportConfig.setDisabled(False)
+        self.ui.actionSaveAs.setDisabled(False)
+        self.ui.actionSaveConfig.setDisabled(False)
+        self.ui.pushButtonAddNe.setDisabled(False)
+        self.ui.pushButtonDelNe.setDisabled(False)
+        self.ui.pushButtonCheckNe.setDisabled(False)
+        self.ui.pushButtonUpdateAll.setDisabled(False)
+        self.ui.pushButtonAddVersionFile.setDisabled(False)
+        for action in self.ui.tableViewNe.actions():
+            action.setDisabled(False)
+                
     def checkNeSlot(self,message):
         '''接收检查线程反馈的消息，进行处理，根据结果在界面上反映'''
         uiDebug("")
@@ -535,19 +579,20 @@ class updateWindow(QMainWindow):
             row  = int(result[2])
             
             if runResult == NeThread.FINISH_ALL_FUN:
-                model = self.ui.tableViewNet.model()
+                model = self.ui.tableViewNe.model()
                 
                 
                 model.setData(model.index(row, showColumn[NE_IP])               ,self.NEs[row].neIp)
                 model.setData(model.index(row, showColumn[SOFTWARE_VERSION])    ,self.NEs[row].softwareVersion)
                 model.setData(model.index(row, showColumn[HARDWARE_VERSION])    ,self.NEs[row].hardwareVersion)
-                model.setData(model.index(row, showColumn[MASTER_SLAVE_STATE])  ,self.NEs[row].masterSlaveState)
+#                 model.setData(model.index(row, showColumn[MASTER_SLAVE_STATE])  ,self.NEs[row].masterSlaveState)
                 model.setData(model.index(row, showColumn[NE_STATE])            ,self.NEs[row].neState)
                 model.setData(model.index(row, showColumn[UPDATE_STATE])        ,self.NEs[row].processState)
                 self.messageShow(u"网元%s结束检查"%(self.NEs[row].neIp))
                 self.NEthreads[row].signal.sig.disconnect(self.checkNeSlot)
                 self.logging.info(u"收到网元%s,网元检查结束消息:%s"%(self.NEs[row].neIp,message))
-            
+                self.setUIstatusEnable()
+                
             if runResult == NeThread.BEGIN_RUN_FUN:
                 pass
                 
@@ -570,12 +615,16 @@ class updateWindow(QMainWindow):
         '''检查网元slot'''
         self.logging.info(u"开始检查网元操作:")
         self.messageShow(u"开始检查网元")
+        
+        self.setUIstatusDisable()
+        
         if self.checkThreadRunning()==True:
             self.messageShow(u"上一个操作还未结束，请稍后再尝试")
             self.logging.warning(u"上一个操作还未结束")
             self.logging.info(u"终止检查网元操作\n")
+            self.setUIstatusEnable()
             return 
-        
+         
         for row in self.NEs.keys():
             self.NEthreads[row].clearThreadfun()
             self.NEthreads[row].setThreadfun(1,self.NEs[row].checkNe , NE_OK , row)
@@ -594,7 +643,7 @@ class updateWindow(QMainWindow):
             value =int(result[2].encode("utf-8"))
             row = value / 100
             process = value %1000
-            model = self.ui.tableViewNet.model()
+            model = self.ui.tableViewNe.model()
             
             if runResult == NeThread.FINISH_ALL_FUN:
                 
@@ -604,11 +653,12 @@ class updateWindow(QMainWindow):
                 model.setData(model.index(row, showColumn[NE_IP])               ,self.NEs[row].neIp)
                 model.setData(model.index(row, showColumn[SOFTWARE_VERSION])    ,self.NEs[row].softwareVersion)
                 model.setData(model.index(row, showColumn[HARDWARE_VERSION])    ,self.NEs[row].hardwareVersion)
-                model.setData(model.index(row, showColumn[MASTER_SLAVE_STATE])  ,self.NEs[row].masterSlaveState)
+#                 model.setData(model.index(row, showColumn[MASTER_SLAVE_STATE])  ,self.NEs[row].masterSlaveState)
                 model.setData(model.index(row, showColumn[NE_STATE])  ,u"升级成功")
                 self.messageShow(u"网元%s结束升级"%(self.NEs[row].neIp))
                 self.logging.info(u"收到网元%s结束升级消息%s"%(self.NEs[row].neIp,message))
                 self.NEthreads[row].signal.sig.disconnect(self.updataAllSlot)
+                self.setUIstatusEnable()
                  
             #用于界面显示     
             if runResult == NeThread.BEGIN_RUN_FUN:
@@ -643,11 +693,13 @@ class updateWindow(QMainWindow):
     def updateAll(self):
         '''开始升级'''
         self.logging.info(u"开始升级网元操作:")
+        self.setUIstatusDisable()
         self.messageShow(u"开始升级网元")
         if self.checkThreadRunning()==True:
             self.messageShow(u"上一个操作还未结束，请稍后再尝试")
             self.logging.warning(u"上一个操作还未结束")
             self.logging.info(u"终止升级网元操作\n")
+            self.setUIstatusEnable()
             return         
         
         if self.versionFile == None:
@@ -655,10 +707,15 @@ class updateWindow(QMainWindow):
             QMessageBox.information(self,u"警告",Info)
             self.logging.warning(u"未设置升级版本文件")
             self.logging.info(u"终止升级网元操作\n")
+            self.setUIstatusEnable()
             return
         
         #清除网元保留的配置文件路径
         for row in self.NEs.keys():
+            item=self.netModel.item(row, showColumn[NE_NAME])
+            if item.checkState() != Qt.Checked:
+                continue
+            
             ne =self.NEs[row]
             self.NEthreads[row]=NeThread()
             self.NEthreads[row].clearThreadfun()
@@ -718,8 +775,8 @@ class updateWindow(QMainWindow):
         #导入配置前，清除上一次配置
         
         #删除界面上所有网元
-        index = self.ui.tableViewNet.currentIndex()
-        model = self.ui.tableViewNet.model()
+        index = self.ui.tableViewNe.currentIndex()
+        model = self.ui.tableViewNe.model()
         rowCount = model.rowCount(index.parent())
         while rowCount!=0:
             model.removeRow(0,index.parent())
@@ -809,19 +866,35 @@ class updateWindow(QMainWindow):
             
     def __addNe(self,tempNe):
         if tempNe!=None:
-            index = self.ui.tableViewNet.selectionModel().currentIndex()
-            model = self.ui.tableViewNet.model()
+            index = self.ui.tableViewNe.selectionModel().currentIndex()
+            model = self.ui.tableViewNe.model()
             row = model.rowCount(index.parent())
         
             name = QStandardItem(tempNe.neName)
             name.setCheckable(True)
+            name.setEditable(False)
             model.setItem(row, showColumn[NE_NAME], name)
-            model.setItem(row, showColumn[NE_IP]               , QStandardItem(tempNe.neIp))
-            model.setItem(row, showColumn[SOFTWARE_VERSION]    , QStandardItem(tempNe.softwareVersion))
-            model.setItem(row, showColumn[HARDWARE_VERSION]    , QStandardItem(tempNe.hardwareVersion))
-            model.setItem(row, showColumn[MASTER_SLAVE_STATE]  , QStandardItem(tempNe.masterSlaveState))
-            model.setItem(row, showColumn[NE_STATE]            , QStandardItem(tempNe.neState))
-            model.setItem(row, showColumn[UPDATE_STATE]        , QStandardItem(tempNe.processState))
+            
+            neIp = QStandardItem(tempNe.neIp)
+            neIp.setEditable(False)
+            model.setItem(row, showColumn[NE_IP]               , neIp)
+            
+            softwareVersion = QStandardItem(tempNe.softwareVersion)
+            softwareVersion.setEditable(False)
+            model.setItem(row, showColumn[SOFTWARE_VERSION]    , softwareVersion)
+            
+            hardwareVersion = QStandardItem(tempNe.hardwareVersion)
+            hardwareVersion.setEditable(False)
+            model.setItem(row, showColumn[HARDWARE_VERSION]    , hardwareVersion)
+#             model.setItem(row, showColumn[MASTER_SLAVE_STATE]  , QStandardItem(tempNe.masterSlaveState))
+            
+            neState = QStandardItem(tempNe.neState)
+            neState.setEditable(False)
+            model.setItem(row, showColumn[NE_STATE]            , neState)
+            
+            processState = QStandardItem(tempNe.processState)
+            processState.setEditable(False)
+            model.setItem(row, showColumn[UPDATE_STATE]        , processState)
                     
             index=model.index(row, showColumn[UPDATE_STATE])
             model.setData(index,tempNe.processState)
@@ -862,10 +935,11 @@ class updateWindow(QMainWindow):
             self.logging.info(u"终止删除网元操作\n")
             return 
         
-        index = self.ui.tableViewNet.currentIndex()
-        model =self.ui.tableViewNet.model()
+        index = self.ui.tableViewNe.currentIndex()
+        model =self.ui.tableViewNe.model()
         rowCount = model.rowCount(index.parent())
 
+        #记录那些row被删除
         delRows=[]
         delRowChanges={}
         for row in range(0,rowCount):
@@ -888,28 +962,29 @@ class updateWindow(QMainWindow):
                 #选择不删除网元
                 return
      
+            #从高到低删除row
             delRows.reverse()
             for row in delRows:
                 model.removeRow(row,index.parent())
                 self.logging.info(u"删除网元%s\n"%(self.NEs[row].neIp))
                 self.NEs.pop(row)
                 self.NEthreads.pop(row)
-                
+           
+           
+            #重组self.NES和self.NEthreads
+            NEs = self.NEs.values()
+            NEthreads = self.NEthreads.values()
+            self.NEs.clear()
+            self.NEthreads.clear()
+            for row in range(0,model.rowCount(index.parent())):
+                self.NEs[row]=NEs[row]
+                self.NEthreads[row]=NEthreads[row]
         
         else:
             Info = u"没有选中网元！请选中后，再操作。"
             QMessageBox.information(self,u"警告",Info)
             self.logging.warning(u"没有删除任何网元\n")
 
-#         #        
-#         print "*********************"
-#         print self.NEs
-#         rowCount = model.rowCount(index.parent())
-#         for row in range(0,rowCount):
-#             item=model.item(row, showColumn[UPDATE_STATE])
-#             print item   
-# #             index=model.index(row, showColumn[UPDATE_STATE])
-# #             print index  
             
     def addVersionFile(self):
         '''添加版本文件'''
