@@ -75,6 +75,7 @@ class NeThread(QThread):
         self.exceptResult = {}  #线程调用函数后的预期正确的返回结果
         self.realResult   = {}  #线程调用函数后的返回结果
         self.emit         = {}  #线程调用完毕后发送的信号
+        self.breakFlag    = True
         self.signal = NESignal()
         
     def clearThreadfun(self):
@@ -84,6 +85,7 @@ class NeThread(QThread):
         self.exceptResult.clear()
         self.realResult.clear()
         self.emit.clear()
+        self.breakFlag    = True
 #         self.signal.disconnect()
         
     def setThreadfun(self,step,fun,exceptResult,emit=None,*args): 
@@ -107,12 +109,14 @@ class NeThread(QThread):
         uiDebug("")
         uiDebug("")
         
+        self.breakFlag    = True
         for key in self.funs.keys():
             fun =self.funs[key]
             #运行函数，将函数的运行结果保留到，self.realResult[fun]
             uiDebug("**** NeThread run fun: %s "%(str(fun)))
             
             self.signal.sig.emit(self.BEGIN_RUN_FUN+":"+str(fun)+"="+str(self.emit[key]))
+            
             
             if len(self.funsArgs[key]) != 0:
                 result=fun(*self.funsArgs[key])
@@ -128,7 +132,8 @@ class NeThread(QThread):
                 self.signal.sig.emit(self.FUN_ERR+":"+str(fun)+"="+str(self.emit[key]))
                 uiDebug("emit: "+self.FUN_ERR+":"+str(fun)+"="+str(self.emit[key]))
                 uiDebug("**** NeThread run end 1")
-                return
+                self.breakFlag    = True
+                break
             else:
             #如果结果符合预期，线程停止运行，发出thread_fun_ok=附加码的信号,这里的附加码是预设值    
                 if self.emit[key]!=None:
@@ -141,7 +146,8 @@ class NeThread(QThread):
         uiDebug("emit: "+self.FINISH_ALL_FUN+":"+str(fun)+"="+str(self.emit[key]))
         uiDebug("**** NeThread run end ")
         uiDebug("")
-        uiDebug("")        
+        uiDebug("")    
+        self.breakFlag    = True    
         return 
 
 
@@ -299,9 +305,9 @@ class editNEDialog(QDialog):
         
         #这里使用线程运行，以防止界面假死
         self.thread.clearThreadfun()
-#         self.thread.setThreadfun(1,self.ne.telnetManagePlatformTest , NE_OK ,"None")
-#         self.thread.setThreadfun(2,self.ne.telnetAccessPlatformTest , NE_OK ,"None")
-#         self.thread.setThreadfun(3,self.ne.checkNe , NE_OK)
+        self.thread.setThreadfun(1,self.ne.telnetManagePlatformTest , NE_OK ,"None")
+        self.thread.setThreadfun(2,self.ne.telnetAccessPlatformTest , NE_OK ,"None")
+        self.thread.setThreadfun(3,self.ne.checkNe , NE_OK)
         self.thread.setThreadfun(1,QThread.sleep,None,1,1)
         
         self.thread.start()
@@ -345,20 +351,8 @@ class updateWindow(QMainWindow):
         for key in showColumn.keys():
             self.netModel.setHorizontalHeaderItem(showColumn[key], QStandardItem(key))
         
-#         self.ui.tableViewNe.setColumnWidth(showColumn[SOFTWARE_VERSION],50)
-#         self.ui.tableViewNe.setColumnWidth(showColumn[NE_STATE],50)
-#         self.ui.tableViewNe.setColumnWidth(showColumn[UPDATE_STATE],100)
-        print self.ui.tableViewNe.columnWidth(showColumn[SOFTWARE_VERSION])
-        print self.ui.tableViewNe.columnWidth(showColumn[NE_STATE])
-        print self.ui.tableViewNe.columnWidth(showColumn[UPDATE_STATE])
-        
-        
-            
+        #设置表格，以及表格的默认长度    
         self.ui.tableViewNe.setModel(self.netModel)
-        print self.ui.tableViewNe.columnWidth(showColumn[SOFTWARE_VERSION])
-        print self.ui.tableViewNe.columnWidth(showColumn[NE_STATE])
-        print self.ui.tableViewNe.columnWidth(showColumn[UPDATE_STATE])
-
         self.ui.tableViewNe.setColumnWidth(showColumn[SOFTWARE_VERSION],150)
         self.ui.tableViewNe.setColumnWidth(showColumn[NE_STATE],150)
         self.ui.tableViewNe.setColumnWidth(showColumn[UPDATE_STATE],360)        
@@ -374,6 +368,8 @@ class updateWindow(QMainWindow):
         
         QObject.connect(self.ui.pushButtonCheckNe, SIGNAL("clicked()"), self, SLOT("checkNe()"))
         QObject.connect(self.ui.pushButtonUpdateAll, SIGNAL("clicked()"), self, SLOT("updateAll()"))
+        QObject.connect(self.ui.pushButtonCancel, SIGNAL("clicked()"), self, SLOT("cancelOperation()"))
+        
         
         self.versionFile     = None   #目标升级版本文件名
         self.versionFilePath = None   #目标升级版本文件本地路径
@@ -480,8 +476,8 @@ class updateWindow(QMainWindow):
 #         print "current " 
 #         print index
 #         print index.parent
-#         print self.ui.tableViewNe.model()
-#         model =self.ui.tableViewNe.model()
+#         print self.netModel
+#         model =self.netModel
         
         
 #         row = model.rowCount(index.parent())
@@ -492,7 +488,7 @@ class updateWindow(QMainWindow):
      
     def selectAllNE(self):
         index = self.ui.tableViewNe.currentIndex()
-        model =self.ui.tableViewNe.model()
+        model =self.netModel
         print type(model)
         rowCount = model.rowCount(index.parent())
         for row in range(0,rowCount):
@@ -502,7 +498,7 @@ class updateWindow(QMainWindow):
     
     def selectNoneNE(self):
         index = self.ui.tableViewNe.currentIndex()
-        model =self.ui.tableViewNe.model()
+        model =self.netModel
         rowCount = model.rowCount(index.parent())
         for row in range(0,rowCount):
             item=model.item(row, showColumn[NE_NAME])
@@ -575,17 +571,15 @@ class updateWindow(QMainWindow):
         
         if  result !=EMIT_SIGNAL_ERR:
             runResult = result[0]
-            runFun  = result[1]
+#             runFun  = result[1]
             row  = int(result[2])
             
             if runResult == NeThread.FINISH_ALL_FUN:
-                model = self.ui.tableViewNe.model()
-                
+                model = self.netModel
                 
                 model.setData(model.index(row, showColumn[NE_IP])               ,self.NEs[row].neIp)
                 model.setData(model.index(row, showColumn[SOFTWARE_VERSION])    ,self.NEs[row].softwareVersion)
                 model.setData(model.index(row, showColumn[HARDWARE_VERSION])    ,self.NEs[row].hardwareVersion)
-#                 model.setData(model.index(row, showColumn[MASTER_SLAVE_STATE])  ,self.NEs[row].masterSlaveState)
                 model.setData(model.index(row, showColumn[NE_STATE])            ,self.NEs[row].neState)
                 model.setData(model.index(row, showColumn[UPDATE_STATE])        ,self.NEs[row].processState)
                 self.messageShow(u"网元%s结束检查"%(self.NEs[row].neIp))
@@ -597,13 +591,12 @@ class updateWindow(QMainWindow):
                 pass
                 
             if runResult == NeThread.FUN_OK:
-#                 self.messageShow(u"网元%s，检查成功"%(self.NEs[row].neName))
                 self.logging.info(u"收到网元%s,函数执行成功消息:%s"%(self.NEs[row].neIp,message))
                 
             if runResult == NeThread.FUN_ERR:
                 self.messageShow(u"网元%s，检查失败"%(self.NEs[row].neIp))
                 self.logging.error(u"收到网元%s,函数执行失败消息:%s"%(self.NEs[row].neIp,message))
-                return
+
         else:
             uiDebug("receive without control message: %s"%(message))
             self.logging.warning(u"检查网元信息处理模块收到未定义的消息%s"%(message))
@@ -625,12 +618,20 @@ class updateWindow(QMainWindow):
             self.setUIstatusEnable()
             return 
          
+        flag = 0 
         for row in self.NEs.keys():
+            item=self.netModel.item(row, showColumn[NE_NAME])
+            if item.checkState() != Qt.Checked:
+                continue
+            flag=1
             self.NEthreads[row].clearThreadfun()
             self.NEthreads[row].setThreadfun(1,self.NEs[row].checkNe , NE_OK , row)
             self.NEthreads[row].signal.sig.connect(self.checkNeSlot)
             self.NEthreads[row].run()
             self.logging.info(u"执行NE:%s,检测线程"%(self.NEs[row].neIp))
+        
+        if flag==0:
+            self.setUIstatusEnable()
             
         self.logging.info(u"完成检查网元操作:相关检查操作在子线程中执行\n")
     
@@ -643,7 +644,7 @@ class updateWindow(QMainWindow):
             value =int(result[2].encode("utf-8"))
             row = value / 100
             process = value %1000
-            model = self.ui.tableViewNe.model()
+            model = self.netModel
             
             if runResult == NeThread.FINISH_ALL_FUN:
                 
@@ -653,12 +654,13 @@ class updateWindow(QMainWindow):
                 model.setData(model.index(row, showColumn[NE_IP])               ,self.NEs[row].neIp)
                 model.setData(model.index(row, showColumn[SOFTWARE_VERSION])    ,self.NEs[row].softwareVersion)
                 model.setData(model.index(row, showColumn[HARDWARE_VERSION])    ,self.NEs[row].hardwareVersion)
-#                 model.setData(model.index(row, showColumn[MASTER_SLAVE_STATE])  ,self.NEs[row].masterSlaveState)
+
                 model.setData(model.index(row, showColumn[NE_STATE])  ,u"升级成功")
                 self.messageShow(u"网元%s结束升级"%(self.NEs[row].neIp))
                 self.logging.info(u"收到网元%s结束升级消息%s"%(self.NEs[row].neIp,message))
                 self.NEthreads[row].signal.sig.disconnect(self.updataAllSlot)
                 self.setUIstatusEnable()
+                 
                  
             #用于界面显示     
             if runResult == NeThread.BEGIN_RUN_FUN:
@@ -666,6 +668,11 @@ class updateWindow(QMainWindow):
                     if runFun.find(item) == -1:
                         pass
                     else:
+                        #这里写的不好，另主线程直接修改子线程的的变量
+                        #如果开始运行NE.reboot操作后，线程会被设置为不可中断
+                        if item == str(NE.reboot).rstrip('>').lstrip("<").split()[2]:
+                            self.NEthreads[row].breakFlag=False
+                            
                         model.setData(model.index(row, showColumn[NE_STATE])  ,self.updateMessage[item])
 
             if runResult == NeThread.FUN_OK:
@@ -689,7 +696,12 @@ class updateWindow(QMainWindow):
                 
     def messageShow(self,text):
         self.ui.textEditInformation.append(text)
-        
+
+    def cancelOperation(self):
+        '''取消操作'''
+        if self.checkThreadRunning()==True:
+            self.setUIstatusEnable()
+            
     def updateAll(self):
         '''开始升级'''
         self.logging.info(u"开始升级网元操作:")
@@ -710,12 +722,28 @@ class updateWindow(QMainWindow):
             self.setUIstatusEnable()
             return
         
+        flag = 0
+        for row in self.NEs.keys():
+            item=self.netModel.item(row, showColumn[NE_NAME])
+            if item.checkState() == Qt.Checked:
+                falg = 1
+                break
+            
+        if flag ==0:   
+            Info = u"没有选择任何网元，升级无法继续"
+            QMessageBox.information(self,u"警告",Info)
+            self.logging.warning(u"没有选择任何网元")
+            self.logging.info(u"终止升级网元操作\n")
+            self.setUIstatusEnable()
+            return
+
+            
         #清除网元保留的配置文件路径
         for row in self.NEs.keys():
             item=self.netModel.item(row, showColumn[NE_NAME])
             if item.checkState() != Qt.Checked:
                 continue
-            
+
             ne =self.NEs[row]
             self.NEthreads[row]=NeThread()
             self.NEthreads[row].clearThreadfun()
@@ -725,10 +753,10 @@ class updateWindow(QMainWindow):
             #升级前检测
             step=step+1
             self.NEthreads[row].setThreadfun(step,ne.checkNe, NE_OK, row*1000+2)
-#                       
-#             #检测升级版本是否与当前运行版本存在冲突            
-#             step=step+1
-#             self.NEthreads[row].setThreadfun(step,ne.checkUpdateFile, NE_OK, row*1000+2,self.versionFile)
+                       
+            #检测升级版本是否与当前运行版本存在冲突            
+            step=step+1
+            self.NEthreads[row].setThreadfun(step,ne.checkUpdateFile, NE_OK, row*1000+2,self.versionFile)
 
             #保留当前网元配置
             step=step+1
@@ -771,12 +799,13 @@ class updateWindow(QMainWindow):
             self.NEthreads[row].start()
             self.logging.info(u"执行NE:%s,升级线程"%(ne.neIp))
 
+            
     def clearConfig(self):
         #导入配置前，清除上一次配置
         
         #删除界面上所有网元
         index = self.ui.tableViewNe.currentIndex()
-        model = self.ui.tableViewNe.model()
+        model = self.netModel
         rowCount = model.rowCount(index.parent())
         while rowCount!=0:
             model.removeRow(0,index.parent())
@@ -864,36 +893,41 @@ class updateWindow(QMainWindow):
         else:
             self.logging.warning(u"没有选择任何文件保留配置")
             
-    def __addNe(self,tempNe):
+    def __addNe(self, tempNe ,active=True):
         if tempNe!=None:
             index = self.ui.tableViewNe.selectionModel().currentIndex()
-            model = self.ui.tableViewNe.model()
+            model = self.netModel
             row = model.rowCount(index.parent())
         
             name = QStandardItem(tempNe.neName)
             name.setCheckable(True)
             name.setEditable(False)
+            name.setEnabled(active)
             model.setItem(row, showColumn[NE_NAME], name)
             
             neIp = QStandardItem(tempNe.neIp)
             neIp.setEditable(False)
+            neIp.setEnabled(active)
             model.setItem(row, showColumn[NE_IP]               , neIp)
             
             softwareVersion = QStandardItem(tempNe.softwareVersion)
             softwareVersion.setEditable(False)
+            softwareVersion.setEnabled(active)
             model.setItem(row, showColumn[SOFTWARE_VERSION]    , softwareVersion)
             
             hardwareVersion = QStandardItem(tempNe.hardwareVersion)
             hardwareVersion.setEditable(False)
+            hardwareVersion.setEnabled(active)
             model.setItem(row, showColumn[HARDWARE_VERSION]    , hardwareVersion)
-#             model.setItem(row, showColumn[MASTER_SLAVE_STATE]  , QStandardItem(tempNe.masterSlaveState))
             
             neState = QStandardItem(tempNe.neState)
             neState.setEditable(False)
+            neState.setEnabled(active)
             model.setItem(row, showColumn[NE_STATE]            , neState)
             
             processState = QStandardItem(tempNe.processState)
             processState.setEditable(False)
+            processState.setEnabled(active)
             model.setItem(row, showColumn[UPDATE_STATE]        , processState)
                     
             index=model.index(row, showColumn[UPDATE_STATE])
@@ -936,7 +970,7 @@ class updateWindow(QMainWindow):
             return 
         
         index = self.ui.tableViewNe.currentIndex()
-        model =self.ui.tableViewNe.model()
+        model =self.netModel
         rowCount = model.rowCount(index.parent())
 
         #记录那些row被删除
