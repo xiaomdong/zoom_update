@@ -980,7 +980,7 @@ class updateConfig:
             return DEL_NE_ERR
         return DEL_NE_OK
         
-    def readConfig(self,configFile):
+    def readConfig(self,configFile,path="."):
         '''读取服务器配置文件'''
         self.configFile=configFile
         neLists={}
@@ -996,7 +996,7 @@ class updateConfig:
                     accessPassword=self.config.get(section,"accessPassword")
                     manageUserName=self.config.get(section,"manageUserName")                                        
                     managePassword=self.config.get(section,"managePassword")
-                    neLists[neName] = NE(neName,neIp,accessUserName,accessPassword,manageUserName,managePassword)
+                    neLists[neName] = NE(neName,neIp,accessUserName,accessPassword,manageUserName,managePassword,path)
         except:
             controlDebug(u"读取配置问题有问题")
             return READ_CONFIG_ERR

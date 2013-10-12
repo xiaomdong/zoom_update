@@ -821,6 +821,8 @@ class updateWindow(QMainWindow):
         '''将导入的配置显示到界面上'''
         if config != None:
             for ne in config.getNeLists().values():
+                
+                
                 self.__addNe(ne)
                 
     def importConfig(self):
@@ -843,7 +845,8 @@ class updateWindow(QMainWindow):
             
             #导入配置文件
             config = updateConfig()
-            result = config.readConfig(configFile[0])
+            #这里写的有点丑陋
+            result = config.readConfig(configFile[0],self.parent().todaylogPath+self.parent().directorySeparator)
             if result == READ_CONFIG_OK:
                 #读取配置文件成功
                 
