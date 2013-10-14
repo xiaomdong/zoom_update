@@ -209,7 +209,8 @@ class editNEDialog(QDialog):
         
         if  result !=EMIT_SIGNAL_ERR:
             runResult = result[0]
-    
+            runFun = result[1]
+            
             if runResult == NeThread.BEGIN_RUN_FUN:
                 pass
             
@@ -217,30 +218,54 @@ class editNEDialog(QDialog):
                     #这里写的不好,直接修改了parent的成员变量
                     self.parent().tempNe=self.ne
                     self.accept()
-                    self.thread.signal.sig.disconnect(self.finish)
+#                     self.thread.signal.sig.disconnect(self.finish)
                     return
                 
             if runResult == NeThread.FUN_ERR:
-                if self.thread.realResult[self.ne.telnetManagePlatformTest] != NE_OK:
+#                 if self.thread.realResult[self.ne.telnetManagePlatformTest] != NE_OK:
+#                     message=u"无法telnet管理平台，请检查！"
+#                     QMessageBox.information(self,u"警告",message)
+#                     self.setEnabled(True)
+#                     self.thread.signal.sig.disconnect(self.finish)
+#                     return
+#                 
+#                 if self.thread.realResult[self.ne.telnetAccessPlatformTest] != NE_OK:   
+#                     message=u"无法telnet接入平台，请检查！"
+#                     QMessageBox.information(self,u"警告",message)
+#                     self.setEnabled(True)
+#                     self.thread.signal.sig.disconnect(self.finish)
+#                     return
+# 
+#                 if self.thread.realResult[self.ne.checkNe] != NE_OK:   
+#                     message=u"检查网元失败，请检查！"
+#                     QMessageBox.information(self,u"警告",message)
+#                     self.setEnabled(True)
+#                     self.thread.signal.sig.disconnect(self.finish)
+#                     return                
+                
+                telnetManagePlatformTestStr = str(NE.telnetManagePlatformTest).rstrip('>').lstrip("<").split()[2]
+                if runFun.find(telnetManagePlatformTestStr) != -1:
                     message=u"无法telnet管理平台，请检查！"
                     QMessageBox.information(self,u"警告",message)
                     self.setEnabled(True)
-                    self.thread.signal.sig.disconnect(self.finish)
+#                     self.thread.signal.sig.disconnect(self.finish)
                     return
                 
-                if self.thread.realResult[self.ne.telnetAccessPlatformTest] != NE_OK:   
+                telnetAccessPlatformTestStr = str(NE.telnetAccessPlatformTest).rstrip('>').lstrip("<").split()[2]
+                if runFun.find(telnetAccessPlatformTestStr) != -1:
                     message=u"无法telnet接入平台，请检查！"
                     QMessageBox.information(self,u"警告",message)
                     self.setEnabled(True)
-                    self.thread.signal.sig.disconnect(self.finish)
+#                     self.thread.signal.sig.disconnect(self.finish)
                     return
-
-                if self.thread.realResult[self.ne.checkNe] != NE_OK:   
+                
+                checkNeStr = str(NE.checkNe).rstrip('>').lstrip("<").split()[2]
+                if runFun.find(checkNeStr) != -1:
                     message=u"检查网元失败，请检查！"
                     QMessageBox.information(self,u"警告",message)
                     self.setEnabled(True)
-                    self.thread.signal.sig.disconnect(self.finish)
-                    return                
+#                     self.thread.signal.sig.disconnect(self.finish)
+                    return  
                 
         else:
             uiDebug("receive without control message: %s"%(Data))
@@ -736,7 +761,8 @@ class updateWindow(QMainWindow):
                     
                 self.messageShow(u"网元%s升级操作,执行函数%s失败"%(self.NEs[row].neIp,runFun))
                 self.logging.error(u"收到网元%s升级操作,执行函数%s失败消息:%s"%(self.NEs[row].neIp,runFun,message))
-
+                self.setUIstatusEnable()
+                
             #在界面上显示进度条    
             model.setData(model.index(row, showColumn[UPDATE_STATE]),processState)
             
