@@ -12,8 +12,8 @@ import re
 #from config import *
 
 logFlag=0
-printdebugFlag = 0
-uiDebugFlag = 0
+printdebugFlag = 1
+uiDebugFlag = 1
 controlDebugFlag = 0
 protocolFlag = 0
 

@@ -75,7 +75,7 @@ class NeThread(QThread):
         self.exceptResult = {}  #线程调用函数后的预期正确的返回结果
         self.realResult   = {}  #线程调用函数后的返回结果
         self.emit         = {}  #线程调用完毕后发送的信号
-        self.breakFlag    = True
+#         self.breakFlag    = True
         self.signal = NESignal()
         
     def clearThreadfun(self):
@@ -85,7 +85,7 @@ class NeThread(QThread):
         self.exceptResult.clear()
         self.realResult.clear()
         self.emit.clear()
-        self.breakFlag    = True
+#         self.breakFlag    = True
 #         self.signal.disconnect()
         
     def setThreadfun(self,step,fun,exceptResult,emit=None,*args): 
@@ -103,25 +103,28 @@ class NeThread(QThread):
          
     def run(self):
         '''运行NE thread'''
-        uiDebug("")
-        uiDebug("")
+#         uiDebug("")
+#         uiDebug("")
         uiDebug("**** NeThread run stat ")
-        uiDebug("")
-        uiDebug("")
+#         uiDebug("")
+#         uiDebug("")
         
-        self.breakFlag    = True
+#         self.breakFlag    = True
         for key in self.funs.keys():
             fun =self.funs[key]
             #运行函数，将函数的运行结果保留到，self.realResult[fun]
-            uiDebug("**** NeThread run fun: %s "%(str(fun)))
+#             uiDebug("**** NeThread run fun: %s "%(str(fun)))
             
             self.signal.sig.emit(self.BEGIN_RUN_FUN+":"+str(fun)+"="+str(self.emit[key]))
-            
+            uiDebug("emit: "+self.BEGIN_RUN_FUN+":"+str(fun)+"="+str(self.emit[key]))
             
             if len(self.funsArgs[key]) != 0:
                 result=fun(*self.funsArgs[key])
             else:
                 result=fun()
+            
+            #将函数的运行结果保留到，self.realResult[fun]
+            self.realResult[fun]=result
             
             #不对函数结果判断时，设置函数运行返回结果为None
             if self.exceptResult[key]==None:
@@ -132,10 +135,9 @@ class NeThread(QThread):
                 self.signal.sig.emit(self.FUN_ERR+":"+str(fun)+"="+str(self.emit[key]))
                 uiDebug("emit: "+self.FUN_ERR+":"+str(fun)+"="+str(self.emit[key]))
                 uiDebug("**** NeThread run end 1")
-                self.breakFlag    = True
-                break
+                return
             else:
-            #如果结果符合预期，线程停止运行，发出thread_fun_ok=附加码的信号,这里的附加码是预设值    
+            #如果结果符合预期，线程继续运行，发出thread_fun_ok=附加码的信号,这里的附加码是预设值    
                 if self.emit[key]!=None:
                     self.signal.sig.emit(self.FUN_OK+":"+str(fun)+"="+str(self.emit[key]))
                     uiDebug("emit: "+self.FUN_OK+":"+str(fun)+"="+str(self.emit[key]))
@@ -145,9 +147,8 @@ class NeThread(QThread):
         self.signal.sig.emit(self.FINISH_ALL_FUN+":"+str(fun)+"="+str(self.emit[key]))
         uiDebug("emit: "+self.FINISH_ALL_FUN+":"+str(fun)+"="+str(self.emit[key]))
         uiDebug("**** NeThread run end ")
-        uiDebug("")
-        uiDebug("")    
-        self.breakFlag    = True    
+#         uiDebug("")
+#         uiDebug("")    
         return 
 
 
@@ -182,7 +183,6 @@ def pyparsingEmit(Data):
     uiDebug("***pyparsingEmit end")
     uiDebug("")
     
-    
 class editNEDialog(QDialog):
     '''网元信息编辑框'''
     def __init__(self,parent=None):
@@ -209,11 +209,15 @@ class editNEDialog(QDialog):
         
         if  result !=EMIT_SIGNAL_ERR:
             runResult = result[0]
-
+    
+            if runResult == NeThread.BEGIN_RUN_FUN:
+                pass
+            
             if runResult == NeThread.FINISH_ALL_FUN:
                     #这里写的不好,直接修改了parent的成员变量
                     self.parent().tempNe=self.ne
                     self.accept()
+                    self.thread.signal.sig.disconnect(self.finish)
                     return
                 
             if runResult == NeThread.FUN_ERR:
@@ -221,13 +225,23 @@ class editNEDialog(QDialog):
                     message=u"无法telnet管理平台，请检查！"
                     QMessageBox.information(self,u"警告",message)
                     self.setEnabled(True)
+                    self.thread.signal.sig.disconnect(self.finish)
                     return
                 
                 if self.thread.realResult[self.ne.telnetAccessPlatformTest] != NE_OK:   
                     message=u"无法telnet接入平台，请检查！"
                     QMessageBox.information(self,u"警告",message)
                     self.setEnabled(True)
+                    self.thread.signal.sig.disconnect(self.finish)
                     return
+
+                if self.thread.realResult[self.ne.checkNe] != NE_OK:   
+                    message=u"检查网元失败，请检查！"
+                    QMessageBox.information(self,u"警告",message)
+                    self.setEnabled(True)
+                    self.thread.signal.sig.disconnect(self.finish)
+                    return                
+                
         else:
             uiDebug("receive without control message: %s"%(Data))
             
@@ -308,7 +322,7 @@ class editNEDialog(QDialog):
         self.thread.setThreadfun(1,self.ne.telnetManagePlatformTest , NE_OK ,"None")
         self.thread.setThreadfun(2,self.ne.telnetAccessPlatformTest , NE_OK ,"None")
         self.thread.setThreadfun(3,self.ne.checkNe , NE_OK)
-        self.thread.setThreadfun(1,QThread.sleep,None,1,1)
+        
         
         self.thread.start()
         
@@ -335,8 +349,6 @@ class updateProgress(QStyledItemDelegate):
             QApplication.style().drawControl(QStyle.CE_ProgressBar, progressBarOption, painter); 
         else:
             QStyledItemDelegate.paint(self, painter, option, index)    
-            
-        
     
 class updateWindow(QMainWindow):
     '''升级主窗口'''
@@ -344,6 +356,7 @@ class updateWindow(QMainWindow):
         QMainWindow.__init__(self, parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.ui.pushButtonCancel.setDisabled(True)
 
         self.netModel = QStandardItemModel()
         self.ui.tableViewNe.setItemDelegate(updateProgress())
@@ -383,6 +396,7 @@ class updateWindow(QMainWindow):
 
         self.updateMessage={}         #升级时界面显示的消息
         self.updateMessage[str(NE.checkNe).rstrip('>').lstrip("<").split()[2]]             = u"检查网元状态"
+        self.updateMessage[str(NE.checkUpdateFile).rstrip('>').lstrip("<").split()[2]]     = u"检查升级文件"
         self.updateMessage[str(NE.saveNeConfig).rstrip('>').lstrip("<").split()[2]]        = u"保存网元配置"
         self.updateMessage[str(NE.saveNeConfigToLocal).rstrip('>').lstrip("<").split()[2]] = u"下载网元配置到本地"
         self.updateMessage[str(NE.updateVersionFile).rstrip('>').lstrip("<").split()[2]]   = u"上传版本文件到网元"
@@ -392,6 +406,8 @@ class updateWindow(QMainWindow):
         self.updateMessage[str(QThread.sleep).rstrip('>').lstrip("<").split()[2]]          = u"复位启动中"
         self.updateMessage[str(NE.afterRebootTest).rstrip('>').lstrip("<").split()[2]]     = u"升级复位后连接检测"
         self.updateMessage[str(NE.afterRebootCheck).rstrip('>').lstrip("<").split()[2]]    = u"升级复位后状态检测"
+        
+        
         
         #目录分隔符
         self.directorySeparator="\\"
@@ -458,6 +474,7 @@ class updateWindow(QMainWindow):
         print self.ui.tableViewNe.actions()
         print self.NEs
         print self.NEthreads
+        self.cancelOperation()
 #         index = self.ui.tableViewNe.selectionModel().currentIndex()
 #         print "select "
 #         print index
@@ -539,6 +556,8 @@ class updateWindow(QMainWindow):
         return True    
         
     def setUIstatusDisable(self):
+        self.ui.pushButtonCancel.setDisabled(False)
+        
         self.ui.actionImportConfig.setDisabled(True)
         self.ui.actionSaveAs.setDisabled(True)
         self.ui.actionSaveConfig.setDisabled(True)
@@ -552,6 +571,8 @@ class updateWindow(QMainWindow):
         
 
     def setUIstatusEnable(self):
+        self.ui.pushButtonCancel.setDisabled(True)
+        
         self.ui.actionImportConfig.setDisabled(False)
         self.ui.actionSaveAs.setDisabled(False)
         self.ui.actionSaveConfig.setDisabled(False)
@@ -581,7 +602,10 @@ class updateWindow(QMainWindow):
                 model.setData(model.index(row, showColumn[SOFTWARE_VERSION])    ,self.NEs[row].softwareVersion)
                 model.setData(model.index(row, showColumn[HARDWARE_VERSION])    ,self.NEs[row].hardwareVersion)
                 model.setData(model.index(row, showColumn[NE_STATE])            ,self.NEs[row].neState)
+                
+                self.NEs[row].processState=0
                 model.setData(model.index(row, showColumn[UPDATE_STATE])        ,self.NEs[row].processState)
+                
                 self.messageShow(u"网元%s结束检查"%(self.NEs[row].neIp))
                 self.NEthreads[row].signal.sig.disconnect(self.checkNeSlot)
                 self.logging.info(u"收到网元%s,网元检查结束消息:%s"%(self.NEs[row].neIp,message))
@@ -611,26 +635,44 @@ class updateWindow(QMainWindow):
         
         self.setUIstatusDisable()
         
+        _flag = 0
+        for row in self.NEs.keys():
+            item=self.netModel.item(row, showColumn[NE_NAME])
+            if item.checkState() == Qt.Checked:
+                _flag = 1
+                break
+
+        if _flag ==0:   
+            Info = u"没有选择任何网元,检查网元无法继续"
+            QMessageBox.information(self,u"警告",Info)
+            self.logging.warning(u"没有选择任何网元")
+            self.logging.info(u"终止检查网元\n")
+            self.messageShow(u"终止检查网元")
+            self.setUIstatusEnable()
+            return
+
         if self.checkThreadRunning()==True:
             self.messageShow(u"上一个操作还未结束，请稍后再尝试")
             self.logging.warning(u"上一个操作还未结束")
             self.logging.info(u"终止检查网元操作\n")
             self.setUIstatusEnable()
+            self.messageShow(u"终止检查网元")
             return 
          
-        flag = 0 
+         
+        _flag = 0 
         for row in self.NEs.keys():
             item=self.netModel.item(row, showColumn[NE_NAME])
             if item.checkState() != Qt.Checked:
                 continue
-            flag=1
+            _flag=1
             self.NEthreads[row].clearThreadfun()
             self.NEthreads[row].setThreadfun(1,self.NEs[row].checkNe , NE_OK , row)
             self.NEthreads[row].signal.sig.connect(self.checkNeSlot)
             self.NEthreads[row].run()
             self.logging.info(u"执行NE:%s,检测线程"%(self.NEs[row].neIp))
         
-        if flag==0:
+        if _flag==0:
             self.setUIstatusEnable()
             
         self.logging.info(u"完成检查网元操作:相关检查操作在子线程中执行\n")
@@ -643,13 +685,13 @@ class updateWindow(QMainWindow):
             runFun    = result[1]
             value =int(result[2].encode("utf-8"))
             row = value / 100
-            process = value %1000
+            processState = value %1000
             model = self.netModel
             
             if runResult == NeThread.FINISH_ALL_FUN:
                 
                 #升级完毕，将新的信息显示到节面
-                process=100
+                processState=100
                 
                 model.setData(model.index(row, showColumn[NE_IP])               ,self.NEs[row].neIp)
                 model.setData(model.index(row, showColumn[SOFTWARE_VERSION])    ,self.NEs[row].softwareVersion)
@@ -668,11 +710,6 @@ class updateWindow(QMainWindow):
                     if runFun.find(item) == -1:
                         pass
                     else:
-                        #这里写的不好，另主线程直接修改子线程的的变量
-                        #如果开始运行NE.reboot操作后，线程会被设置为不可中断
-                        if item == str(NE.reboot).rstrip('>').lstrip("<").split()[2]:
-                            self.NEthreads[row].breakFlag=False
-                            
                         model.setData(model.index(row, showColumn[NE_STATE])  ,self.updateMessage[item])
 
             if runResult == NeThread.FUN_OK:
@@ -684,23 +721,27 @@ class updateWindow(QMainWindow):
                 self.logging.info(u"收到网元%s升级操作,执行函数%s成功消息:%s"%(self.NEs[row].neIp,runFun,message))
                     
             if runResult == NeThread.FUN_ERR:
+                for item in self.updateMessage.keys():
+                    if runFun.find(item) == -1:
+                        pass
+                    else:
+                        model.setData(model.index(row, showColumn[NE_STATE])  ,self.updateMessage[item]+":失败")
+                
+                #版本冲突时需要特殊显示        
                 checkUpdateFileStr = str(NE.checkUpdateFile).rstrip('>').lstrip("<").split()[2]
                 if runFun.find(checkUpdateFileStr) != -1:
                     model.setData(model.index(row, showColumn[NE_STATE])  ,u"升级版本与运行版本存在冲突")
+                
+
                     
                 self.messageShow(u"网元%s升级操作,执行函数%s失败"%(self.NEs[row].neIp,runFun))
                 self.logging.error(u"收到网元%s升级操作,执行函数%s失败消息:%s"%(self.NEs[row].neIp,runFun,message))
 
             #在界面上显示进度条    
-            model.setData(model.index(row, showColumn[UPDATE_STATE]),process)
-                
-    def messageShow(self,text):
-        self.ui.textEditInformation.append(text)
-
-    def cancelOperation(self):
-        '''取消操作'''
-        if self.checkThreadRunning()==True:
-            self.setUIstatusEnable()
+            model.setData(model.index(row, showColumn[UPDATE_STATE]),processState)
+            
+            #更新网元升级状态
+            self.NEs[row].processState=processState
             
     def updateAll(self):
         '''开始升级'''
@@ -712,6 +753,7 @@ class updateWindow(QMainWindow):
             self.logging.warning(u"上一个操作还未结束")
             self.logging.info(u"终止升级网元操作\n")
             self.setUIstatusEnable()
+            self.messageShow(u"终止升级网元操作")
             return         
         
         if self.versionFile == None:
@@ -720,21 +762,23 @@ class updateWindow(QMainWindow):
             self.logging.warning(u"未设置升级版本文件")
             self.logging.info(u"终止升级网元操作\n")
             self.setUIstatusEnable()
+            self.messageShow(u"终止升级网元操作")
             return
         
-        flag = 0
+        _flag = 0
         for row in self.NEs.keys():
             item=self.netModel.item(row, showColumn[NE_NAME])
             if item.checkState() == Qt.Checked:
-                falg = 1
+                _flag = 1
                 break
-            
-        if flag ==0:   
+
+        if _flag ==0:   
             Info = u"没有选择任何网元，升级无法继续"
             QMessageBox.information(self,u"警告",Info)
             self.logging.warning(u"没有选择任何网元")
             self.logging.info(u"终止升级网元操作\n")
             self.setUIstatusEnable()
+            self.messageShow(u"终止升级网元操作")
             return
 
             
@@ -748,58 +792,116 @@ class updateWindow(QMainWindow):
             self.NEthreads[row]=NeThread()
             self.NEthreads[row].clearThreadfun()
             
-            step=0
+            _step=0
             
             #升级前检测
-            step=step+1
-            self.NEthreads[row].setThreadfun(step,ne.checkNe, NE_OK, row*1000+2)
+            _step=_step+1
+            self.NEthreads[row].setThreadfun(_step,ne.checkNe, NE_OK, row*1000+2)
                        
             #检测升级版本是否与当前运行版本存在冲突            
-            step=step+1
-            self.NEthreads[row].setThreadfun(step,ne.checkUpdateFile, NE_OK, row*1000+2,self.versionFile)
+            _step=_step+1
+            self.NEthreads[row].setThreadfun(_step,ne.checkUpdateFile, NE_OK, row*1000+2,self.versionFile)
 
             #保留当前网元配置
-            step=step+1
-            self.NEthreads[row].setThreadfun(step,ne.saveNeConfig, NE_OK, row*1000+5)
+            _step=_step+1
+            self.NEthreads[row].setThreadfun(_step,ne.saveNeConfig, NE_OK, row*1000+5)
             
             #下载网元配置到本地
-            step=step+1
-            self.NEthreads[row].setThreadfun(step,ne.saveNeConfigToLocal, NE_OK, row*1000+5)
+            _step=_step+1
+            self.NEthreads[row].setThreadfun(_step,ne.saveNeConfigToLocal, NE_OK, row*1000+5)
            
             #上传版本文件到网元
-            step=step+1
-            self.NEthreads[row].setThreadfun(step,ne.updateVersionFile, NE_OK, row*1000+20,self.versionFile, self.versionFilePath)
+            _step=_step+1
+            self.NEthreads[row].setThreadfun(_step,ne.updateVersionFile, NE_OK, row*1000+20,self.versionFile, self.versionFilePath)
             
             #升级版本文件
-            step=step+1
-            self.NEthreads[row].setThreadfun(step,ne.updateSoft,NE_OK, row*1000+25, self.versionFile, ne.willUpdateSoftPartition)
+            _step=_step+1
+            self.NEthreads[row].setThreadfun(_step,ne.updateSoft,NE_OK, row*1000+25, self.versionFile, ne.willUpdateSoftPartition)
            
             #激活版本文件
-            step=step+1
-            self.NEthreads[row].setThreadfun(step,ne.activeSoft,NE_OK, row*1000+30, ne.willUpdateSoftPartition)
+            _step=_step+1
+            self.NEthreads[row].setThreadfun(_step,ne.activeSoft,NE_OK, row*1000+30, ne.willUpdateSoftPartition)
             
-            #复位网元
-            step=step+1
-            self.NEthreads[row].setThreadfun(step,ne.reboot,NE_OK, row*1000+35)
+            
+            #复位网元,进度是35%
+            _step=_step+1
+            self.NEthreads[row].setThreadfun(_step,ne.reboot,NE_OK, row*1000+35)
                
             #复位等待  
-            for step in range(step+1,34):
-                self.NEthreads[row].setThreadfun(step,QThread.sleep,None, row*1000+40+step,10)
+            for _step in range(_step+1,34):
+                self.NEthreads[row].setThreadfun(_step,QThread.sleep,None, row*1000+40+_step,10)
              
             #复位后连接测试      
-            step=step+1
-            self.NEthreads[row].setThreadfun(step,ne.afterRebootTest,NE_OK, row*1000+90)
+            _step=_step+1
+            self.NEthreads[row].setThreadfun(_step,ne.afterRebootTest,NE_OK, row*1000+90)
              
             #复位网元正常后，网元检测 
-            step=step+1
-            self.NEthreads[row].setThreadfun(step,ne.afterRebootCheck, NE_OK, row*1000+99,self.ui.lineEditVersion.text())
+            _step=_step+1
+            self.NEthreads[row].setThreadfun(_step,ne.afterRebootCheck, NE_OK, row*1000+99,self.ui.lineEditVersion.text())
                 
             self.NEthreads[row].signal.sig.connect(self.updataAllSlot)
             
             self.NEthreads[row].start()
             self.logging.info(u"执行NE:%s,升级线程"%(ne.neIp))
 
+    def messageShow(self,text):
+        self.ui.textEditInformation.append(text)
+
+    def cancelOperation(self):
+        '''取消操作'''
+        
+        _flag = 0
+        for row in self.NEs.keys():
+            item=self.netModel.item(row, showColumn[NE_NAME])
+            if item.checkState() == Qt.Checked:
+                _flag = 1
+                break
+
+        if _flag ==0:   
+            Info = u"没有选择任何网元，取消操作无法继续"
+            QMessageBox.information(self,u"警告",Info)
+            self.logging.warning(u"没有选择任何网元")
+            self.logging.info(u"无法开展取消操作\n")
+            self.setUIstatusEnable()
+            self.messageShow(Info)
+            return
+        
+        cantCancelNE=[]
+        cancelNE=[]
+        model = self.netModel    
+        if self.checkThreadRunning()==True:
+            for row in self.NEthreads.keys():
+                ne=self.NEs[row]
+                thread= self.NEthreads[row] 
+                item=self.netModel.item(row, showColumn[NE_NAME])
+                if item.checkState() == Qt.Checked:
+                    if ne.processState >= 35:
+                        #当processState >=35时 说明网元已经开始复位操作，这个时候不允许cancel网元
+                        self.messageShow(u"网元%s已经执行完复位操作，后续步骤不允许取消"%(self.NEs[row].neIp))
+                        cantCancelNE.append(ne)
+                        continue
+                    
+                    thread.terminate()
+                    thread.wait(2)
+                    model.setData(model.index(row, showColumn[NE_STATE])  ,u"取消动作成功")
+                    
+                    cancelNE.append(ne)
+                    self.messageShow(u"网元%s操作人为终止"%(self.NEs[row].neIp))
             
+            if len(cancelNE) == len(self.NEs):
+                #如果所有网元都被终止，需要改变界面按钮的使能情况
+                self.setUIstatusEnable()
+
+            if cantCancelNE !=[]:
+                _message = ""
+                for _ne in cantCancelNE:
+                    _message +=_ne.neIp+"," 
+                    
+                msgBox = QMessageBox()
+                msgBox.setText(u"网元:%s已经执行完复位操作，后续步骤不允许取消"%_message)
+#                 msgBox.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
+                msgBox.exec_() 
+                        
     def clearConfig(self):
         #导入配置前，清除上一次配置
         
@@ -846,7 +948,7 @@ class updateWindow(QMainWindow):
             #导入配置文件
             config = updateConfig()
             #这里写的有点丑陋
-            result = config.readConfig(configFile[0],self.parent().todaylogPath+self.parent().directorySeparator)
+            result = config.readConfig(configFile[0],self.todaylogPath+self.directorySeparator)
             if result == READ_CONFIG_OK:
                 #读取配置文件成功
                 
@@ -981,6 +1083,11 @@ class updateWindow(QMainWindow):
         delRowChanges={}
         for row in range(0,rowCount):
             item=model.item(row, showColumn[NE_NAME])
+            print row
+            print item
+            print item.checkState()
+            print item.checkState() ==Qt.Checked 
+            
             if item.checkState() == Qt.Checked:
                 delRows.append(row)
                 for _row in range(row,rowCount):
@@ -1021,7 +1128,6 @@ class updateWindow(QMainWindow):
             Info = u"没有选中网元！请选中后，再操作。"
             QMessageBox.information(self,u"警告",Info)
             self.logging.warning(u"没有删除任何网元\n")
-
             
     def addVersionFile(self):
         '''添加版本文件'''
