@@ -146,7 +146,8 @@ class NE:
     telnet_accesss_user_except_string = "Login:"
     telnet_accesss_password_except_string = "Password:"
     telnet_accesss_welcome_string=""
-    telnet_accesss_prompt="BNOS>"
+#     telnet_accesss_prompt="BNOS>"
+    telnet_accesss_prompt=">"
     
     #接入平台命令列表
     telnet_access_comandDict={SHOW_HOTSTANDBY_GROUP_INFO_ALL:"show hotstandby group-info all",
@@ -156,12 +157,19 @@ class NE:
                               COPY_CONFIG:"copy running-configFile startup-configFile"
                               }
 
-    telnet_access_commandPromtDict={telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]:"BNOS",
-                                    telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO]:"BNOS",
+#     telnet_access_commandPromtDict={telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]:"BNOS",
+#                                     telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO]:"BNOS",
+#                                     telnet_access_comandDict[ENABLE_MODE]:"Password:",
+#                                     telnet_access_comandDict[ENABLE_PASSWORD]:"BNOS",
+#                                     telnet_access_comandDict[COPY_CONFIG]:"BNOS",                                                                        
+#                                }
+    #对提示符的判断存在问题
+    telnet_access_commandPromtDict={telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]:">",
+                                    telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO]:">",
                                     telnet_access_comandDict[ENABLE_MODE]:"Password:",
-                                    telnet_access_comandDict[ENABLE_PASSWORD]:"BNOS",
-                                    telnet_access_comandDict[COPY_CONFIG]:"BNOS",                                                                        
-                               }
+                                    telnet_access_comandDict[ENABLE_PASSWORD]:"#",
+                                    telnet_access_comandDict[COPY_CONFIG]:"#",                                                                        
+                               }    
          
     #管理平台配置    
     telnet_manage_port  = 87

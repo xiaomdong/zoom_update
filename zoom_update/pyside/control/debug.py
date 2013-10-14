@@ -11,14 +11,14 @@ import string
 import re
 #from config import *
 
-logFlag=0
+logFlag=1
 printdebugFlag = 1
 uiDebugFlag = 1
-controlDebugFlag = 0
-protocolFlag = 0
+controlDebugFlag = 1
+protocolFlag = 1
 
-telnetFlag = 0
-ftpFlag = 0
+telnetFlag = 1
+ftpFlag = 1
 
 classFlag = 0
 

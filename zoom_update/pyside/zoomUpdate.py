@@ -3,6 +3,7 @@
 pyside-uic zoomUpdate.ui -o zoomUpdate_ui.py
 
 pyside-uic NE_Dialog.ui -o NE_Dialog_ui.py
+
 '''
  
 import sys,time,os,platform,datetime,filecmp 
@@ -471,8 +472,8 @@ class updateWindow(QMainWindow):
     def createNEContextMenu(self):
         '''添加用户信息快捷菜单'''
         
-        self.addNEAct = QAction(self)
-        self.addNEAct.setText(u"添加网元")
+#         self.addNEAct = QAction(self)
+#         self.addNEAct.setText(u"添加网元")
 # 
 #         self.delNEAct = QAction(self)
 #         self.delNEAct.setText(u"删除网元")
@@ -483,12 +484,12 @@ class updateWindow(QMainWindow):
         self.selectNoneAct = QAction(self)
         self.selectNoneAct.setText(u"全部不选")
         
-        self.ui.tableViewNe.addAction(self.addNEAct)
+#         self.ui.tableViewNe.addAction(self.addNEAct)
 #         self.ui.tableViewNe.addAction(self.delNEAct)
         self.ui.tableViewNe.addAction(self.selectAllAct)
         self.ui.tableViewNe.addAction(self.selectNoneAct)
  
-        QObject.connect(self.addNEAct, SIGNAL("activated()"), self, SLOT("addNEaction()"))
+#         QObject.connect(self.addNEAct, SIGNAL("activated()"), self, SLOT("addNEaction()"))
 #         QObject.connect(self.delNEAct, SIGNAL("activated()"), self, SLOT("delNEAction()"))              
         QObject.connect(self.selectAllAct, SIGNAL("activated()"), self, SLOT("selectAllNE()"))
         QObject.connect(self.selectNoneAct, SIGNAL("activated()"), self, SLOT("selectNoneNE()"))
@@ -795,8 +796,8 @@ class updateWindow(QMainWindow):
         for row in self.NEs.keys():
             item=self.netModel.item(row, showColumn[NE_NAME])
             if item.checkState() == Qt.Checked:
-                _flag = 1
-                break
+                _flag += 1
+#                 break
 
         if _flag ==0:   
             Info = u"没有选择任何网元，升级无法继续"
@@ -807,6 +808,16 @@ class updateWindow(QMainWindow):
             self.messageShow(u"终止升级网元操作")
             return
 
+        #暂时只运行同时升级8个AP
+        if _flag >= 8: 
+            Info = u"同时升级网元数目不能超过8个，请修改"
+            QMessageBox.information(self,u"警告",Info)
+            self.logging.warning(u"同时升级网元数目不能超过8个")
+            self.logging.info(u"终止升级网元操作\n")
+            self.setUIstatusEnable()
+            self.messageShow(u"终止升级网元操作")
+            return
+        
             
         #清除网元保留的配置文件路径
         for row in self.NEs.keys():
