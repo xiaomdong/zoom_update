@@ -785,6 +785,37 @@ class NE:
         
         self.logging.info(u"完成网元复位后版本和配置校验")   
         return NE_OK
+      
+    def afterRebootConfigCheck(self):
+        #升级后配置检测
+        
+        _saveConfigPath = self.saveConfigPath
+                        
+        result = self.saveNeConfigToLocal()
+        if result != NE_OK:
+            return result 
+                
+        #比较升级前后保留配置文件数目和名称是否一致        
+        dirCmpObject =filecmp.dircmp(_saveConfigPath,self.saveConfigPath)        
+        if dirCmpObject.diff_files !=[]:
+            self.logging.warning(u"升级前后保留的配置文件不一致")
+            self.logging.warning(u"升级前后保留的配置文件路径:%s",_saveConfigPath)
+            self.logging.warning(u"升级前后保留的配置文件路径:%s",self.saveConfigPath)
+            self.logging.warning(u"不同文件为: %s",dirCmpObject.diff_files)
+            return CONFIG_FILE_DIFF
+        
+        #比较升级前后保留的配置文件内容是否一致
+        result = filecmp.cmpfiles(_saveConfigPath,self.saveConfigPath,dirCmpObject.common)
+        if result[1]!=[] or result[2]!=[]:
+            self.logging.warning(u"升级前后保留的配置文件内容不一致")
+            self.logging.warning(u"升级前后保留的配置文件路径:%s",_saveConfigPath)
+            self.logging.warning(u"升级前后保留的配置文件路径:%s",self.saveConfigPath)
+            self.logging.warning(u"不同文件为: %s",result[1:3])
+            return CONFIG_FILE_CONTEXT_DIFF
+          
+        self.logging.info(u"完成网元复位后配置校验")   
+        return NE_OK        
+    
                         
     def __enterSuperMode(self):
         result=self.telnetAccessPlatform.runCommand(self.telnet_access_comandDict[ENABLE_MODE])
