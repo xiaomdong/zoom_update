@@ -876,7 +876,7 @@ class updateWindow(QMainWindow):
             self.NEthreads[row].setThreadfun(_step,ne.reboot,NE_OK, row*1000+35)
                
             #复位等待  
-            for _step in range(_step+1,34):
+            for _step in range(_step+1,40):
                 self.NEthreads[row].setThreadfun(_step,QThread.sleep,None, row*1000+40+_step,10)
              
             #复位后连接测试      

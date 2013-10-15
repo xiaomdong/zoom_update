@@ -698,40 +698,35 @@ class NE:
             self.logging.warning(u"连续100秒无法ping通网元，网元状态不正常")
             return NE_DOWN
         
-        #管理平台测试，测试3次，间隔10秒，只要有1次成功,退出测试
-        #加上telnet本身10秒超时，这里每次测试应该是20秒，
-        self.logging.info(u"**telnet管理平台测试")
-        loop=1     
-        while loop!=4:
-            result=self.telnetManagePlatformTest()
-            if result == NE_OK:
-                self.logging.info(u"**第%d次测试，测试成功"%(loop))
-                loop=4
-            else:
-                self.logging.warning(u"**第%d次测试，测试失败"%(loop))
-                loop=loop+1    
-            time.sleep(10)
-         
-        if result!= NE_OK:
-            self.logging.warning(u"连续3次无法telnet管理平台，网元状态不正常")
-            return  NE_DOWN   
+        #管理平台 接入平台测试，测试3次，间隔10秒，只要有1次成功,退出测试
 
-        #接入平台测试，测试3次，间隔10秒，只要有1次成功,退出测试
-        #加上telnet本身10秒超时，这里每次测试应该是20秒，
-        self.logging.info(u"**telnet接入平台测试")
-        loop=1     
+        self.logging.info(u"**telnet管理平台测试")
+        loop=1    
+        result1 = NE_OK
+        result2 = NE_OK        
         while loop!=4:
-            result=self.telnetManagePlatformTest()
-            if result == NE_OK:
-                self.logging.info(u"**第%d次测试，测试成功"%(loop))
-                loop=4
+            result1=self.telnetManagePlatformTest()
+            result2=self.telnetManagePlatformTest()
+            
+            if result1 == NE_OK:
+                self.logging.info(u"**管理平台第%d次测试，测试成功"%(loop))
             else:
-                self.logging.warning(u"**第%d次测试，测试失败"%(loop))
-                loop=loop+1    
+                self.logging.warning(u"**管理平台第%d次测试，测试失败"%(loop))
+
+            if result2 == NE_OK:
+                self.logging.info(u"**接入平台第%d次测试，测试成功"%(loop))
+            else:
+                self.logging.warning(u"**接入平台第%d次测试，测试失败"%(loop))
+                
+            if result1==1 and result2==1:    
+                loop = 4 
+            else:   
+                loop += 1
+            
             time.sleep(10)
          
-        if result!= NE_OK:
-            self.logging.warning(u"连续3次无法telnet接入平台，网元状态不正常")
+        if result1!= NE_OK or result2 !=NE_OK :
+            self.logging.warning(u"telnet网元不正常，网元状态不正常")
             return  NE_DOWN
                     
         return NE_OK
