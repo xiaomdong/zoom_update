@@ -704,7 +704,7 @@ class NE:
         loop=1    
         result1 = NE_OK
         result2 = NE_OK        
-        while loop!=4:
+        while loop!=10:
             result1=self.telnetManagePlatformTest()
             result2=self.telnetManagePlatformTest()
             
@@ -718,7 +718,7 @@ class NE:
             else:
                 self.logging.warning(u"**接入平台第%d次测试，测试失败"%(loop))
                 
-            if result1==1 and result2==1:    
+            if result1==NE_OK and result2==NE_OK:    
                 loop = 4 
             else:   
                 loop += 1
