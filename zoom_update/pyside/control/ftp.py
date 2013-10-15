@@ -46,15 +46,13 @@ class ftpAC():
         try:
             self.ftpHandle=FTP(self.targetIp)
         except:
-#             traceback.print_exc()
-            ftpDebug("FTP_CONNECT_EXCEPT")
+            traceback.print_exc()
             return FTP_CONNECT_EXCEPT    
 
         try:
             self.ftpHandle.login(username,password)
         except:    
-#             traceback.print_exc()
-            ftpDebug("FTP_LOGIN_EXCEPT")
+            traceback.print_exc()
             return FTP_LOGIN_EXCEPT
         
         ftpDebug("FTP_OK")            
@@ -67,8 +65,7 @@ class ftpAC():
         try:
             self.ftpHandle.quit()
         except:
-#             traceback.print_exc()
-            ftpDebug("FTP_LOGOUT_EXCEPT")
+            traceback.print_exc()
             return FTP_LOGOUT_EXCEPT
             
         ftpDebug("FTP_OK")
@@ -81,9 +78,8 @@ class ftpAC():
         try:
             self.currentPath=self.ftpHandle.pwd()
         except:
-#             traceback.print_exc()
+            traceback.print_exc()
             self.currentPath = None
-            ftpDebug("FTP_SET_PWD_EXCEPT")
             return FTP_GET_PWD_EXCEPT    
         return FTP_OK
     
@@ -95,8 +91,7 @@ class ftpAC():
         try:
             self.ftpHandle.cwd(path)
         except:
-#             traceback.print_exc()
-            ftpDebug("FTP_SET_PWD_EXCEPT")
+            traceback.print_exc()
             return FTP_SET_PWD_EXCEPT
         
         self.currentPath = path
@@ -119,8 +114,7 @@ class ftpAC():
         try:
             self.ftpHandle.storbinary('STOR '+fileName, open(localPath +fileName,'rb'))
         except:
-#             traceback.print_exc()
-            ftpDebug("FTP_PUT_FILE_EXCEPT")
+            traceback.print_exc()
             return FTP_PUT_FILE_EXCEPT    
                     
         self.setPWD(currentPath)
@@ -133,8 +127,7 @@ class ftpAC():
         try:
             self.ftpHandle.retrbinary('RETR '+fileName, open(savePath + saveFileName,'wb').write)
         except:
-#             traceback.print_exc()
-            ftpDebug("FTP_GET_FILE_EXCEPT")
+            traceback.print_exc()
             return FTP_GET_FILE_EXCEPT
              
         return FTP_OK

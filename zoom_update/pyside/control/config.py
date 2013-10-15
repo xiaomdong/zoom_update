@@ -13,6 +13,7 @@ import ConfigParser
 from telnet import telnetAC ,TELNET_OK
 from fileCheck import fileCheck,RMIOS_STR,VXWORKS_STR,LINUX_STR,VERSION_STR,BOOTLOADER_STR
 from ftp import ftpAC ,FTP_OK
+import traceback
 
 #错误码
 CONFIG_CODE_BASE                     = 300 
@@ -278,9 +279,9 @@ class NE:
             
         #建立日志记录模块,在logpath目录下，以网元名加IP地址建立网元日志目录
         if logpath==".":
-            self.logPath=self.neName+"_"+self.neIp
+            self.logPath=unicode(self.neName+"_"+self.neIp,"utf-8")
         else:
-            self.logPath=logpath+self.neName+"_"+self.neIp
+            self.logPath=unicode(logpath+self.neName+"_"+self.neIp,"utf-8")
 
         if os.path.exists(self.logPath) == False:
             os.mkdir(self.logPath)     
@@ -342,11 +343,11 @@ class NE:
             result=tempstr.searchString(self.telnetManagePlatform.commandResult,True)
             self.softwareVersion=result[0][VERSION_STR]
         except:
-            controlDebug("parsing software version err\n")
             self.telnetManagePlatform.logout()
             self.logging.error(u"**解析软件版本信息出错")
             self.logging.info(u"**断开管理平台telnet连接")
             self.logging.info(u"由于意外，终止检查网元信息")
+            traceback.print_exc()
             return PYPARSING_SOFTWARE_VERSION_ERR   
  
         self.logging.info(u"**获取软件版本信息为:%s"%(self.softwareVersion))
@@ -359,11 +360,11 @@ class NE:
             #硬件型号取硬件code的第2和第3字节
             self.hardwareVersion=hardwareDict[int(result[0][HARDWARE_CODE][2:4])]
         except:
-            controlDebug("parsing hardware version err\n")
             self.telnetManagePlatform.logout()
             self.logging.error(u"**解析硬件版本信息出错")
             self.logging.info(u"**断开管理平台telnet连接")
             self.logging.info(u"由于意外，终止检查网元信息")
+            traceback.print_exc()
             return PYPARSING_HARDWARE_VERSION_ERR   
             
         self.logging.info(u"**获取硬件版本信息为:%s"%(self.hardwareVersion))
@@ -374,11 +375,11 @@ class NE:
             self.currentSoftPartition    = result[0][CURRENT_SOFT_PARTITION]
             self.willUpdateSoftPartition = GET_WILL_UPDATE_SOFT_PARTITION[self.currentSoftPartition]
         except:
-            controlDebug("parsing current soft partion  err\n")
             self.telnetManagePlatform.logout()
             self.logging.error(u"**解析当前运行软件分区出错")
             self.logging.info(u"**断开管理平台telnet连接")            
             self.logging.info(u"由于意外，终止检查网元信息")
+            traceback.print_exc()
             return PYPARSING_CURRENT_SOFT_PARTITION_ERR   
         
         self.logging.info(u"**获取当前运行版本分区信息为:%s"%(self.currentSoftPartition))
@@ -473,11 +474,11 @@ class NE:
                 return GET_UPDATE_FILE_ERR
             self.updateFile = fileName
         except:
-            controlDebug("1 parsing root softfile err\n")
             self.logging.error(u"**解析升级目录下的文件信息失败")
             self.telnetManagePlatform.logout()
             self.logging.info(u"**断开管理平台telnet连接") 
             self.logging.info(u"由于意外，终止升级软件操作")
+            traceback.print_exc()
             return PYPARSING_UPDATE_FILE_ERR  
         
          
@@ -627,8 +628,8 @@ class NE:
             if len(result)==0:
                 return FILE_IS_NOT_EXIST
         except:
-            controlDebug("parsing %s err\n"%(path+fileName))
             self.telnetManagePlatform.logout()
+            traceback.print_exc()
             return PYPARSING_FILE_ERR  
         
         self.telnetManagePlatform.logout()
@@ -1015,7 +1016,7 @@ class updateConfig:
         try:
             self.neLists.pop(ne.neName)
         except:
-            controlDebug("del NE:%s err"%(ne.neName))
+            traceback.print_exc()
             return DEL_NE_ERR
         return DEL_NE_OK
         
@@ -1037,7 +1038,7 @@ class updateConfig:
                     managePassword=self.config.get(section,"managePassword")
                     neLists[neName] = NE(neName,neIp,accessUserName,accessPassword,manageUserName,managePassword,path)
         except:
-            controlDebug(u"读取配置问题有问题")
+            traceback.print_exc()
             return READ_CONFIG_ERR
         
         if self.neLists != None:
@@ -1065,14 +1066,7 @@ class updateConfig:
                 self.config.set(NE,"managePassword",self.neLists[neKey].managePassword)
             except:
                 '''有重复会不添加到配置中，走这个异常流程'''
-                controlDebug(u"添加配置有问题:"+NE+","+
-                           self.neLists[neKey].neName+","+
-                           self.neLists[neKey].neIp+","+
-                           self.neLists[neKey].accessUserName+","+
-                           self.neLists[neKey].accessPassword+","+
-                           self.neLists[neKey].manageUserName+","+
-                           self.neLists[neKey].managePassword)
-           
+                traceback.print_exc()
         try:  
             if configFile==None:
                 configFile=self.configFile
@@ -1080,6 +1074,7 @@ class updateConfig:
                 self.config.write(_configFile)
             self.configFile= configFile
         except:
+            traceback.print_exc()
             return  OPEN_CONFIG_FILE_ERR         
          
         return SAVE_CONFIG_OK 

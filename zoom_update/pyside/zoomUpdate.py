@@ -18,6 +18,7 @@ import sys,time,os,platform,datetime,filecmp
 
 from PySide.QtCore import *
 from PySide.QtGui import *
+from PySide.QtNetwork import *
 
 from ui.zoomUpdate_ui import Ui_MainWindow
 from ui.NE_Dialog_ui import Ui_Dialog
@@ -288,7 +289,8 @@ class editNEDialog(QDialog):
 
             if int(result[0][IP_SECTION_4]) == 0:
                 return IP_ERR
-        except:    
+        except:   
+            traceback.print_exc() 
             return IP_ERR
         
         return ZOOM_OK
@@ -334,7 +336,15 @@ class editNEDialog(QDialog):
                  manageUserName.encode("utf-8"),
                  managePassword.encode("utf-8"),
                  self.parent().todaylogPath+self.parent().directorySeparator)
-       
+
+#         self.ne =NE(neName,
+#                  neIp,
+#                  accessUserName,
+#                  accessPassword,
+#                  manageUserName,
+#                  managePassword,
+#                  self.parent().todaylogPath+self.parent().directorySeparator)
+               
         #检查网元是否已经存在，如果存在，就不用再添加了
         if self.parent().checkNeExist(self.ne) != NE_NOT_EXIST:
             message=u"已有相同命名或者IP的网元存在，请修改"
@@ -554,7 +564,8 @@ class updateWindow(QMainWindow):
             for thread in self.NEthreads.values():
                 thread.terminate()
         except:
-            pass      
+            traceback.print_exc()
+      
           
         event.accept()
                         
@@ -646,7 +657,7 @@ class updateWindow(QMainWindow):
             if runResult == NeThread.FUN_ERR:
                 self.messageShow(u"网元%s，检查失败"%(self.NEs[row].neIp))
                 self.logging.error(u"收到网元%s,函数执行失败消息:%s"%(self.NEs[row].neIp,message))
-
+                self.setUIstatusEnable()
         else:
             uiDebug("receive without control message: %s"%(message))
             self.logging.warning(u"检查网元信息处理模块收到未定义的消息%s"%(message))
@@ -1001,7 +1012,7 @@ class updateWindow(QMainWindow):
                 self.logging.info(u"配置文件%s读取成功"%(configFile[0]))
             else:
                 #读取配置文件失败
-                self.logging.err(u"配置文件%s读取失败"%(configFile[0]))
+                self.logging.error(u"配置文件%s读取失败"%(configFile[0]))
                 
     def saveConfig(self):
         '''保存当前升级配置，主要是网元信息'''
@@ -1041,7 +1052,8 @@ class updateWindow(QMainWindow):
             model = self.netModel
             row = model.rowCount(index.parent())
         
-            name = QStandardItem(tempNe.neName)
+            
+            name = QStandardItem(unicode(tempNe.neName,"utf-8"))
             name.setCheckable(True)
             name.setEditable(False)
             name.setEnabled(active)
@@ -1198,6 +1210,84 @@ class updateWindow(QMainWindow):
         self.versionFile = versionFile.version["version"]    
         self.logging.info(u"添加版本文件%s成功\n"%(openFile[0]))
           
+
+class QtSingleApplication(QApplication):
+    #网上拷贝的一个程序，使得程序只能运行一个
+    #http://stackoverflow.com/questions/12712360/qtsingleapplication-for-pyside-or-pyqt
+    messageReceived = Signal(unicode)
+
+    def __init__(self, id, *argv):
+
+        super(QtSingleApplication, self).__init__(*argv)
+        self._id = id
+        self._activationWindow = None
+        self._activateOnMessage = False
+
+        # Is there another instance running?
+        self._outSocket = QLocalSocket()
+        self._outSocket.connectToServer(self._id)
+        self._isRunning = self._outSocket.waitForConnected()
+
+        if self._isRunning:
+            # Yes, there is.
+            self._outStream = QTextStream(self._outSocket)
+            self._outStream.setCodec('UTF-8')
+        else:
+            # No, there isn't.
+            self._outSocket = None
+            self._outStream = None
+            self._inSocket = None
+            self._inStream = None
+            self._server = QLocalServer()
+            self._server.listen(self._id)
+            self._server.newConnection.connect(self._onNewConnection)
+
+    def isRunning(self):
+        return self._isRunning
+
+    def id(self):
+        return self._id
+
+    def activationWindow(self):
+        return self._activationWindow
+
+    def setActivationWindow(self, activationWindow, activateOnMessage = True):
+        self._activationWindow = activationWindow
+        self._activateOnMessage = activateOnMessage
+
+    def activateWindow(self):
+        if not self._activationWindow:
+            return
+        self._activationWindow.setWindowState(
+            self._activationWindow.windowState() & ~Qt.WindowMinimized)
+        self._activationWindow.raise_()
+        self._activationWindow.activateWindow()
+
+    def sendMessage(self, msg):
+        if not self._outStream:
+            return False
+        self._outStream << msg << '\n'
+        self._outStream.flush()
+        return self._outSocket.waitForBytesWritten()
+
+    def _onNewConnection(self):
+        if self._inSocket:
+            self._inSocket.readyRead.disconnect(self._onReadyRead)
+        self._inSocket = self._server.nextPendingConnection()
+        if not self._inSocket:
+            return
+        self._inStream = QTextStream(self._inSocket)
+        self._inStream.setCodec('UTF-8')
+        self._inSocket.readyRead.connect(self._onReadyRead)
+        if self._activateOnMessage:
+            self.activateWindow()
+
+    def _onReadyRead(self):
+        while True:
+            msg = self._inStream.readLine()
+            if not msg: break
+            self.messageReceived.emit(msg)
+                      
 def main():
     app = QApplication(sys.argv)
     app.setStyle("cleanlooks")
@@ -1206,6 +1296,19 @@ def main():
     d.show()
     sys.exit(app.exec_())
     
+
+def singleMain():
+    appGuid = 'F3FF80BA-BA05-4277-8063-82A6DB9245A2'
+    app = QtSingleApplication(appGuid, sys.argv)
+    app.setStyle("cleanlooks")
+    if app.isRunning():
+        sys.exit(0)
+
+    d = updateWindow(app)
+    d.show()
+    sys.exit(app.exec_())
     
+            
 if __name__ == '__main__':
-    main()    
+#     main()  
+    singleMain()  

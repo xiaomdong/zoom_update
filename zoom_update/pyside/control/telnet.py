@@ -101,7 +101,7 @@ class telnetAC():
                 self.status = TELNET_OK
                 telnetDebug(self.commandResult) 
         except:
-            telnetDebug("TELNET_EXCEPT_ERROR")
+            traceback.print_exc()
             self.status = TELNET_EXCEPT_ERROR
             return TELNET_EXCEPT_ERROR
         
@@ -129,8 +129,8 @@ class telnetAC():
                 self.telnet = telnetlib.Telnet(self.targetIp, self.port, self.timeout)
 #                 self.telnet.set_debuglevel(1)
             except:
+                traceback.print_exc()
                 self.status = TELNET_CONNECT_ERR
-                telnetDebug("__init__ TELNET_CONNECT_ERR")
                 return TELNET_CONNECT_ERR
         
             try:
@@ -163,7 +163,6 @@ class telnetAC():
             except:
                 traceback.print_exc()
                 self.status = TELNET_EXCEPT_ERROR
-                telnetDebug("login TELNET_EXCEPT_ERROR")
                 return TELNET_EXCEPT_ERROR
              
             self.status = TELNET_OK

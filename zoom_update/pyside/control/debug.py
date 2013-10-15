@@ -10,6 +10,7 @@ import locale
 import string
 import re
 #from config import *
+import traceback
 
 logFlag=1
 printdebugFlag = 1
@@ -83,7 +84,7 @@ def printdebug(*args):
             textencoding = getTextCoding()
         #pylint: disable=W0702    
         except:
-#            print "unicode err"
+            traceback.print_exc()
             return    
 
         for arg in args:

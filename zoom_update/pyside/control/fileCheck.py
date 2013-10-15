@@ -8,6 +8,7 @@ Created on 2013-9-13
 from pyparsing import oneOf,CaselessLiteral,Word,printables,Combine,StringStart,WordStart
 from debug import controlDebug,classDecorator
 import string
+import traceback
 
 #错误码
 FILE_CODE_BASE = 200
@@ -68,7 +69,7 @@ class fileCheck():
         try:
             fd=open(self.file,"rb")
         except:
-            controlDebug("open file %s err"%self.file)
+            traceback.print_exc()
             return OPEN_FILE_ERR
         try:
             for key in self.offsetDic.keys():
@@ -77,7 +78,7 @@ class fileCheck():
                 self.version[key]=buf.strip(chr(0))
                 controlDebug(self.version[key])
         except:
-            controlDebug("read file %s err"%self.file)
+            traceback.print_exc()
             return READ_FILE_ERR        
         fd.close()
         
@@ -90,7 +91,7 @@ class fileCheck():
                 result=parstring.parseString(self.version[key])
                 controlDebug("result : "+str(result))
         except:  
-            controlDebug("verify version: %s, %s ,err"%(key,self.version[key]))  
+            traceback.print_exc()
             return  VERIFY_VERSION_ERR
         return VERIFY_VERSION_OK
     
