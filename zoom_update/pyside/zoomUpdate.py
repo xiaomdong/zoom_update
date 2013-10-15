@@ -762,7 +762,7 @@ class updateWindow(QMainWindow):
                     if runFun.find(item) == -1:
                         pass
                     else:
-                        model.setData(model.index(row, showColumn[NE_STATE])  ,self.updateMessage[item]+":失败")
+                        model.setData(model.index(row, showColumn[NE_STATE])  ,self.updateMessage[item]+u":失败")
                 
                 #版本冲突时需要特殊显示        
                 checkUpdateFileStr = str(NE.checkUpdateFile).rstrip('>').lstrip("<").split()[2]
