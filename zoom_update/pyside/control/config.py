@@ -691,7 +691,7 @@ class NE:
                 self.logging.warning(u"**第%d次测试，测试失败"%(loop))
                 loop=loop+1
                     
-            time.sleep(10)
+            time.sleep(12)
         
         #如果ping不同，则认为网元失连，返回NE_DOWN    
         if result != NE_OK:
