@@ -680,23 +680,23 @@ class NE:
         
         self.logging.info(u"开始网元复位后连接测试")
         
-        #ping测试, 测试10次, 间隔10秒, 只要有1次成功,退出测试
-        self.logging.info(u"**ping测试")
-        while loop!=11:
-            result=self.pingTest()
-            if result == NE_OK:
-                self.logging.info(u"**第%d次测试，测试成功"%(loop))
-                loop=11
-            else:
-                self.logging.warning(u"**第%d次测试，测试失败"%(loop))
-                loop=loop+1
-                    
-            time.sleep(12)
-        
-        #如果ping不同，则认为网元失连，返回NE_DOWN    
-        if result != NE_OK:
-            self.logging.warning(u"连续100秒无法ping通网元，网元状态不正常")
-            return NE_DOWN
+#         #ping测试, 测试10次, 间隔10秒, 只要有1次成功,退出测试
+#         self.logging.info(u"**ping测试")
+#         while loop!=11:
+#             result=self.pingTest()
+#             if result == NE_OK:
+#                 self.logging.info(u"**第%d次测试，测试成功"%(loop))
+#                 loop=11
+#             else:
+#                 self.logging.warning(u"**第%d次测试，测试失败"%(loop))
+#                 loop=loop+1
+#                     
+#             time.sleep(12)
+#         
+#         #如果ping不同，则认为网元失连，返回NE_DOWN    
+#         if result != NE_OK:
+#             self.logging.warning(u"连续100秒无法ping通网元，网元状态不正常")
+#             return NE_DOWN
         
         #管理平台 接入平台测试，测试3次，间隔10秒，只要有1次成功,退出测试
 
