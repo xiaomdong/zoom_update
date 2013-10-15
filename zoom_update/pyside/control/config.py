@@ -192,14 +192,14 @@ class NE:
                                REBOOT:"reboot",    
                                REBOOT_YES:"y",
                               }
-    telnet_manage_commandPromt_dict={telnet_manage_command_dict[GET_VERSION]:"cwcos#",
+    telnet_manage_commandPromt_dict={telnet_manage_command_dict[GET_VERSION]:"#",
                                telnet_manage_command_dict[UPGRADE]:"to exit:",
                                telnet_manage_command_dict[UPGRADE_YES]:"Version upgrade success!",
                                telnet_manage_command_dict[ACTIVE]:"Version active success!",
-                               telnet_manage_command_dict[LS]:"cwcos#",
-                               telnet_manage_command_dict[PWD]:"cwcos#",
+                               telnet_manage_command_dict[LS]:"#",
+                               telnet_manage_command_dict[PWD]:"#",
                                telnet_manage_command_dict[REBOOT]:"Are you sure to reboot",
-                               telnet_manage_command_dict[REBOOT_YES]:"cwcos#",
+                               telnet_manage_command_dict[REBOOT_YES]:"#",
                                }
     
 
