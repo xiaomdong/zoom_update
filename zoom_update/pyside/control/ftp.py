@@ -63,7 +63,8 @@ class ftpAC():
         ftp 登出
         '''
         try:
-            self.ftpHandle.quit()
+#             self.ftpHandle.quit()
+            self.ftpHandle.close()
         except:
             traceback.print_exc()
             return FTP_LOGOUT_EXCEPT
@@ -112,7 +113,9 @@ class ftpAC():
             self.setPWD(serverPath)
 
         try:
-            self.ftpHandle.storbinary('STOR '+fileName, open(localPath +fileName,'rb'))
+            fileHandle =  open(localPath +fileName,'rb')
+            self.ftpHandle.storbinary('STOR '+fileName, fileHandle)
+            fileHandle.close()
         except:
             traceback.print_exc()
             return FTP_PUT_FILE_EXCEPT    
@@ -125,7 +128,9 @@ class ftpAC():
         ftp 下载文件
         '''
         try:
-            self.ftpHandle.retrbinary('RETR '+fileName, open(savePath + saveFileName,'wb').write)
+            fileHandle = open(savePath + saveFileName,'wb')
+            self.ftpHandle.retrbinary('RETR '+fileName, fileHandle.write)
+            fileHandle.close()
         except:
             traceback.print_exc()
             return FTP_GET_FILE_EXCEPT

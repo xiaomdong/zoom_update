@@ -79,6 +79,7 @@ class fileCheck():
                 controlDebug(self.version[key])
         except:
             traceback.print_exc()
+            fd.close()
             return READ_FILE_ERR        
         fd.close()
         

@@ -174,10 +174,10 @@ class NE:
          
     #管理平台配置    
     telnet_manage_port  = 87
-    telnet_manage_user_except_string = "cwcos login:"
+    telnet_manage_user_except_string = "login:"
     telnet_manage_password_except_string = "Password:"
     telnet_manage_welcome_string="Welcome to Centralize wireless Controller Operating System"
-    telnet_manage_prompt="cwcos#"
+    telnet_manage_prompt="#"
     softPath    = '/root/'  #存放软件的路径
     
     
@@ -365,7 +365,8 @@ class NE:
             self.logging.info(u"**断开管理平台telnet连接")
             self.logging.info(u"由于意外，终止检查网元信息")
             traceback.print_exc()
-            return PYPARSING_HARDWARE_VERSION_ERR   
+            self.hardwareVersion ="********"
+#             return PYPARSING_HARDWARE_VERSION_ERR   
             
         self.logging.info(u"**获取硬件版本信息为:%s"%(self.hardwareVersion))
             
@@ -646,8 +647,10 @@ class NE:
             cmd ="ping -n 4 %s"%self.neIp
               
         outFile=self.neIp+"_ping.temp"
-        ret =subprocess.call(cmd,shell=True,stdout=open(outFile,'w'),stderr=subprocess.STDOUT)
-
+        fd=open(outFile,'w')
+        ret =subprocess.call(cmd,shell=True,stdout=fd,stderr=subprocess.STDOUT)
+        fd.close()
+        
         controlDebug( "ping %s ret: %d"%(self.neIp,ret))
         if ret == 0 :
             return  NE_OK   
@@ -706,7 +709,7 @@ class NE:
         result2 = NE_OK        
         while loop <10:
             result1=self.telnetManagePlatformTest()
-            result2=self.telnetManagePlatformTest()
+            result2=self.telnetAccessPlatformTest()
             
             if result1 == NE_OK:
                 self.logging.info(u"**管理平台第%d次测试，测试成功"%(loop))
@@ -1066,6 +1069,8 @@ class updateConfig:
                 configFile=self.configFile
             with open(configFile, 'wb') as _configFile:
                 self.config.write(_configFile)
+                _configFile.close()
+                
             self.configFile= configFile
         except:
             traceback.print_exc()

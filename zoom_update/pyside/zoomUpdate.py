@@ -577,9 +577,9 @@ class updateWindow(QMainWindow):
                 self.logging.warning(u"网元IP%s已经存在"%(ne.neIp))
                 return NE_IP_EXIST
             if _ne.neName == ne.neName:
-                self.logging.warning(u"网元名%s已经存在"%(ne.neName))
+                self.logging.warning(u"网元名%s已经存在"%(unicode(ne.neName,"utf-8")))
                 return NE_NAME_EXIST
-        self.logging.info(u"检查网元结束，网元:IP%s,和网元名:%s,是唯一的"%(ne.neIp,ne.neName))    
+        self.logging.info(u"检查网元结束，网元:IP%s,和网元名:%s,是唯一的"%(ne.neIp,unicode(ne.neName,"utf-8")))    
         return NE_NOT_EXIST     
         
     def checkThreadRunning(self):
@@ -721,7 +721,7 @@ class updateWindow(QMainWindow):
             runResult = result[0]
             runFun    = result[1]
             value =int(result[2].encode("utf-8"))
-            row = value / 100
+            row = value / 1000
             processState = value %1000
             model = self.netModel
             
@@ -876,7 +876,7 @@ class updateWindow(QMainWindow):
             self.NEthreads[row].setThreadfun(_step,ne.reboot,NE_OK, row*1000+35)
                
             #复位等待  
-            for _step in range(_step+1,40):
+            for _step in range(_step+1,45):
                 self.NEthreads[row].setThreadfun(_step,QThread.sleep,None, row*1000+40+_step,10)
              
             #复位后连接测试      
@@ -1204,7 +1204,8 @@ class updateWindow(QMainWindow):
                     self.ui.lineEditVersion.setText(u"版本文件无法校验")
                     self.logging.warning(u"版本文件%s无法校验"%(openFile))
                     return
-                
+        else:
+            return        
         self.ui.lineEditVersion.setText(versionFile.version["version"])
         self.versionFilePath = openFile[0][0:len(openFile[0])- len(versionFile.version["version"])]   
         self.versionFile = versionFile.version["version"]    

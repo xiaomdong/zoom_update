@@ -84,7 +84,9 @@ class telnetAC():
             
             #如果命令有预期的返回值则需要检查，没有就不用检测        
             if self.command[command] != None:
-                result = self.telnet.expect([self.command[command]], self.timeout)
+#                 result = self.telnet.expect([self.command[command]], self.timeout)
+                #由于激活命令特殊，需要超时时间很长，这里修改为60秒
+                result = self.telnet.expect([self.command[command]], 60)
                 telnetDebug(result)
                 
                 #-1 命令输入后的提示符，表示返回值与预期不符
