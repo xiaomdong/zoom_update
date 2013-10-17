@@ -720,6 +720,7 @@ class updateWindow(QMainWindow):
         if  result !=EMIT_SIGNAL_ERR:
             runResult = result[0]
             runFun    = result[1]
+            runFunStr= self.updateMessage[runFun.rstrip('>').lstrip("<").split()[2]]
             value =int(result[2].encode("utf-8"))
             row = value / 1000
             processState = value %1000
@@ -753,7 +754,8 @@ class updateWindow(QMainWindow):
                 #对于主动休眠操作，不在界面上显示，只记录日志
                 sleepStr=str(QThread.sleep).rstrip('>').lstrip("<").split()[2]
                 if runFun.find(sleepStr) == -1:
-                    self.messageShow(u"网元%s升级操作,执行函数%s成功"%(self.NEs[row].neIp,runFun))
+#                     runFunStr= self.updateMessage[runFun.rstrip('>').lstrip("<").split()[2]]
+                    self.messageShow(u"网元%s升级操作,执行函数%s成功"%(self.NEs[row].neIp,runFunStr))
 
                 self.logging.info(u"收到网元%s升级操作,执行函数%s成功消息:%s"%(self.NEs[row].neIp,runFun,message))
                     
@@ -771,7 +773,7 @@ class updateWindow(QMainWindow):
                 
 
                     
-                self.messageShow(u"网元%s升级操作,执行函数%s失败"%(self.NEs[row].neIp,runFun))
+                self.messageShow(u"网元%s升级操作,执行函数%s失败"%(self.NEs[row].neIp,runFunStr))
                 self.logging.error(u"收到网元%s升级操作,执行函数%s失败消息:%s"%(self.NEs[row].neIp,runFun,message))
                 self.setUIstatusEnable()
                 

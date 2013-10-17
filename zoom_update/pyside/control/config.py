@@ -63,6 +63,10 @@ CONFIG_FILE_CONTEXT_DIFF             = CONFIG_CODE_BASE + 38
 UPDATE_PARTITION_ERR                 = CONFIG_CODE_BASE + 39
 TARGET_VERSION_SAME                  = CONFIG_CODE_BASE + 40
 
+COPY_RUN_TO_START_ERR                = CONFIG_CODE_BASE + 41
+ENTER_SUPER_MODE_ERR                 = CONFIG_CODE_BASE + 42
+SAVE_CONFIG_ERR                      = CONFIG_CODE_BASE + 43
+
 #关键字
 NE_NAME            = u"网元名" 
 NE_IP              = u"网元IP"  
@@ -93,6 +97,7 @@ LS            = "ls"
 PWD           = "pwd"
 REBOOT        = "reboot"
 REBOOT_YES    = "reboot_yes"
+COPY_RUN_TO_START ="copy_run_to_start"
 
 #软件分区升级定义，
 #当前分区为version0时，需要升级version1分区
@@ -158,14 +163,14 @@ class NE:
                               COPY_CONFIG:"copy running-configFile startup-configFile"
                               }
 
-#     telnet_access_commandPromtDict={telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]:"BNOS",
+#     telnet_access_commandPromt_dict={telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]:"BNOS",
 #                                     telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO]:"BNOS",
 #                                     telnet_access_comandDict[ENABLE_MODE]:"Password:",
 #                                     telnet_access_comandDict[ENABLE_PASSWORD]:"BNOS",
 #                                     telnet_access_comandDict[COPY_CONFIG]:"BNOS",                                                                        
 #                                }
     #对提示符的判断存在问题
-    telnet_access_commandPromtDict={telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]:">",
+    telnet_access_commandPromt_dict={telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]:">",
                                     telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO]:">",
                                     telnet_access_comandDict[ENABLE_MODE]:"Password:",
                                     telnet_access_comandDict[ENABLE_PASSWORD]:"#",
@@ -191,8 +196,10 @@ class NE:
                                PWD:"pwd",
                                REBOOT:"reboot",    
                                REBOOT_YES:"y",
+                               COPY_RUN_TO_START:"/usr/bin/copy_run_to_startup"
                               }
-    telnet_manage_commandPromt_dict={telnet_manage_command_dict[GET_VERSION]:"#",
+    telnet_manage_commandPromt_dict={
+                               telnet_manage_command_dict[GET_VERSION]:"#",
                                telnet_manage_command_dict[UPGRADE]:"to exit:",
                                telnet_manage_command_dict[UPGRADE_YES]:"Version upgrade success!",
                                telnet_manage_command_dict[ACTIVE]:"Version active success!",
@@ -200,6 +207,7 @@ class NE:
                                telnet_manage_command_dict[PWD]:"#",
                                telnet_manage_command_dict[REBOOT]:"Are you sure to reboot",
                                telnet_manage_command_dict[REBOOT_YES]:"#",
+                               telnet_manage_command_dict[COPY_RUN_TO_START]:"#",
                                }
     
 
@@ -225,6 +233,7 @@ class NE:
                           "nsswitch.conf"         : "/etc/",
                           "bcm_running_config"    : "/etc/",
                           "vxworks_conf"          : "/nvram/",
+                          "icac_cfg.conf"         : "/icac_conf/",
                           }
     
     
@@ -398,7 +407,7 @@ class NE:
             self.logging.info(u"由于意外，终止检查网元信息")
             return TELNET_ACCESS_PLATFORM_ERR
 
-        self.telnetAccessPlatform.setCommand(self.telnet_access_commandPromtDict)
+        self.telnetAccessPlatform.setCommand(self.telnet_access_commandPromt_dict)
 
         
         #下发命令查看热备状态
@@ -616,6 +625,8 @@ class NE:
             controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
             return TELNET_MANAGE_PLATFORM_ERR  
         
+        self.telnetManagePlatform.setCommand(self.telnet_manage_commandPromt_dict) 
+        
         result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[LS], path)
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[LS]))
@@ -832,8 +843,48 @@ class NE:
     
     
     def saveNeConfig(self):
+        self.neState="保留网元配置成功"
+        result1 = self.savetManagePlatformConfig()
+        result2 = self.saveAccessPlatformConfig()
+
+        if result1 != NE_OK or result2 != NE_OK:
+            return SAVE_CONFIG_ERR
+                     
+        return NE_OK
+    
+    
+    def savetManagePlatformConfig(self):
         '''
-                     保留当前运行配置
+                     保留管理平台当前运行配置
+        '''
+        self.logging.info(u"开始管理平台配置保存操作")
+        
+        result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
+        if result != TELNET_OK:
+            controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
+            self.logging.error(u"**telnet管理平台失败: 错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止管理平台配置保存操作")   
+            return TELNET_MANAGE_PLATFORM_ERR 
+        
+        self.telnetManagePlatform.setCommand(self.telnet_manage_commandPromt_dict)
+        self.logging.info(self.telnetManagePlatform.commandResult)
+        
+        result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[COPY_RUN_TO_START])
+        if result != TELNET_OK:
+            controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[COPY_RUN_TO_START]))
+            self.telnetManagePlatform.logout()
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止管理平台保存操作")            
+            return COPY_RUN_TO_START_ERR
+        
+        self.telnetManagePlatform.logout()
+
+        self.neState="保留管理平台配置成功"
+        return NE_OK
+    
+    def saveAccessPlatformConfig(self):
+        '''
+                     保留接入平台当前运行配置
         '''
         self.logging.info(u"开始接入平台配置保存操作")
         
@@ -846,7 +897,7 @@ class NE:
             self.logging.info(u"由于意外，终止接入平台配置保存操作")            
             return TELNET_ACCESS_PLATFORM_ERR
 
-        self.telnetAccessPlatform.setCommand(self.telnet_access_commandPromtDict)
+        self.telnetAccessPlatform.setCommand(self.telnet_access_commandPromt_dict)
         
         #进入super模式
         self.logging.info(u"**进入接入平台super模式") 
@@ -858,7 +909,7 @@ class NE:
             self.logging.error(u"**进入接入平台super模式错误，错误码为:%d"%(result))
             self.logging.info(u"**断开接入平台telnet连接") 
             self.logging.info(u"由于意外，终止接入平台配置保存操作")
-            return result   
+            return ENTER_SUPER_MODE_ERR   
         
         #下发配置保留命令
         self.logging.info(u"**下发配置保留命令")
@@ -870,14 +921,16 @@ class NE:
             self.telnetAccessPlatform.logout()
             self.logging.info(u"**断开接入平台telnet连接")
             self.logging.info(u"由于意外，终止接入平台配置保存操作")
-            return GET_HOTSTANDBY_STATUS_ERR
+            return COPY_RUN_TO_START_ERR
         
         
         #退出接入平台telnet 
         self.telnetAccessPlatform.logout()   
         self.logging.info(u"**断开接入平台telnet连接")     
         self.logging.info(u"完成接入平台配置保存操作")
-        self.neState="保留网元配置成功"
+        
+        
+        self.neState="保留接入平台配置成功"
         return NE_OK
     
                 
