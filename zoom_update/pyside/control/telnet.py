@@ -57,6 +57,7 @@ class telnetAC():
         self.command=commandDict
         telnetDebug("setCommand:"+str(commandDict))
             
+            
     def runCommand(self, command , arg=None):
         '''
                      运行命令，不管命令执行成功或者失败，只抓取命令输出，
@@ -102,6 +103,48 @@ class telnetAC():
                 self.commandResult=result
                 self.status = TELNET_OK
                 telnetDebug(self.commandResult) 
+        except:
+            traceback.print_exc()
+            self.status = TELNET_EXCEPT_ERROR
+            return TELNET_EXCEPT_ERROR
+        
+#         self.telnet.write("\r\n")
+#         self.status = TELNET_OK
+        return TELNET_OK
+
+    def runCommandWithExpect(self, command ,expectStr, arg=None):
+        '''
+                     运行命令，不管命令执行成功或者失败，只抓取命令输出，
+                     将命令结果，保存在self.commandResult中，由使用者自
+                     行分析结果             
+        '''
+        self.commandResult = None
+        
+        if self.logined != True:
+            self.status = TELNET_NO_LOGIN
+            telnetDebug("telnet not logined")
+            return TELNET_NO_LOGIN
+        
+           
+        try:
+            telnetDebug("run command %s"%(command))
+            if arg ==None:
+                self.telnet.write(command + "\r")
+            else:
+                self.telnet.write(command + arg + "\r")
+            print "expectStr: %s"%(expectStr)
+            result = self.telnet.expect([expectStr], 60)
+            telnetDebug(result)
+                
+            #-1 命令输入后的提示符，表示返回值与预期不符
+            if result[0] == -1:
+                telnetDebug("command: %scan't match the except string" % (command))
+                self.status = COMMAND_RUN_ERR
+            else:
+                self.commandResult = result[2]
+                self.status = TELNET_OK
+                telnetDebug(self.commandResult)
+
         except:
             traceback.print_exc()
             self.status = TELNET_EXCEPT_ERROR
@@ -192,48 +235,49 @@ if  __name__ == "__main__":
                         telnet_manage_welcome_string,
                         telnet_manage_prompt)
     testTelnet.login(user, password) 
-#     commandDic={"cat /proc/rmi/mips-version\n" : "cwcos#"}
-#     
-#     testTelnet.setCommand(commandDic)
-#     testTelnet.runCommand("cat /proc/rmi/mips-version\n")
-
-#     testTelnet.logout()
-#     testTelnet.runCommand("cat /proc/rmi/mips-version\n")
     
-
-#     print "1  get socket :" +str(testTelnet.telnet.get_socket())
-#     from time import sleep
-#     sleep(100)
-#     print "get socket :" +str(testTelnet.telnet.get_socket())
-#     sleep(300)
-#     print "2  get socket :" +str(testTelnet.telnet.get_socket())
-#     testTelnet.runCommand("cat /proc/rmi/mips-version\n")
-#     sleep(500)
-#     print "3  get socket :" +str(testTelnet.telnet.get_socket())
-#     testTelnet.runCommand("cat /proc/rmi/mips-version\n")
-#     sleep(700)
-#     print "4  get socket :" +str(testTelnet.telnet.get_socket())
-#     testTelnet.runCommand("cat /proc/rmi/mips-version\n")
-
-
-    ip = "10.1.1.2"
-    user = "bnas"
-    password = "bnas"
-     
-    telnet_accesss_port = 23
-    telnet_accesss_user_except_string = "Login:"
-    telnet_accesss_password_except_string = "Password:"
-    telnet_accesss_welcome_string=""
-    telnet_accesss_prompt="BNOS>"
-     
-    testTelnet = telnetAC(ip,
-                        telnet_accesss_port,
-                        telnet_accesss_user_except_string,
-                        telnet_accesss_password_except_string,
-                        telnet_accesss_welcome_string,
-                        telnet_accesss_prompt)
-   
-    testTelnet.login(user, password) 
-
+# #     commandDic={"cat /proc/rmi/mips-version\n" : "cwcos#"}
+# #     
+# #     testTelnet.setCommand(commandDic)
+# #     testTelnet.runCommand("cat /proc/rmi/mips-version\n")
+# 
+# #     testTelnet.logout()
+# #     testTelnet.runCommand("cat /proc/rmi/mips-version\n")
+#     
+# 
+# #     print "1  get socket :" +str(testTelnet.telnet.get_socket())
+# #     from time import sleep
+# #     sleep(100)
+# #     print "get socket :" +str(testTelnet.telnet.get_socket())
+# #     sleep(300)
+# #     print "2  get socket :" +str(testTelnet.telnet.get_socket())
+# #     testTelnet.runCommand("cat /proc/rmi/mips-version\n")
+# #     sleep(500)
+# #     print "3  get socket :" +str(testTelnet.telnet.get_socket())
+# #     testTelnet.runCommand("cat /proc/rmi/mips-version\n")
+# #     sleep(700)
+# #     print "4  get socket :" +str(testTelnet.telnet.get_socket())
+# #     testTelnet.runCommand("cat /proc/rmi/mips-version\n")
+# 
+# 
+#     ip = "10.1.1.2"
+#     user = "bnas"
+#     password = "bnas"
+#      
+#     telnet_accesss_port = 23
+#     telnet_accesss_user_except_string = "Login:"
+#     telnet_accesss_password_except_string = "Password:"
+#     telnet_accesss_welcome_string=""
+#     telnet_accesss_prompt="BNOS>"
+#      
+#     testTelnet = telnetAC(ip,
+#                         telnet_accesss_port,
+#                         telnet_accesss_user_except_string,
+#                         telnet_accesss_password_except_string,
+#                         telnet_accesss_welcome_string,
+#                         telnet_accesss_prompt)
+#    
+#     testTelnet.login(user, password) 
+# 
 
 

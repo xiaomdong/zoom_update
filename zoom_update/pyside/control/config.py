@@ -14,6 +14,7 @@ from telnet import telnetAC ,TELNET_OK
 from fileCheck import fileCheck,RMIOS_STR,VXWORKS_STR,LINUX_STR,VERSION_STR,BOOTLOADER_STR
 from ftp import ftpAC ,FTP_OK
 import traceback
+import time
 
 #错误码
 CONFIG_CODE_BASE                     = 300 
@@ -66,6 +67,9 @@ TARGET_VERSION_SAME                  = CONFIG_CODE_BASE + 40
 COPY_RUN_TO_START_ERR                = CONFIG_CODE_BASE + 41
 ENTER_SUPER_MODE_ERR                 = CONFIG_CODE_BASE + 42
 SAVE_CONFIG_ERR                      = CONFIG_CODE_BASE + 43
+ENTER_ACCESS_PRE_ERR                 = CONFIG_CODE_BASE + 44
+ENTER_ACCESS_ERR                     = CONFIG_CODE_BASE + 45
+TELNET_ACCESS_FROM_MANAGE_ERR        = CONFIG_CODE_BASE + 46 
 
 #关键字
 NE_NAME            = u"网元名" 
@@ -98,6 +102,10 @@ PWD           = "pwd"
 REBOOT        = "reboot"
 REBOOT_YES    = "reboot_yes"
 COPY_RUN_TO_START ="copy_run_to_start"
+ENTER_ACCESS_PRE  ="enter_access_pre"
+ENTER_ACCESS      ="enter_access"
+ENTER_ACCESS_USR      ="enter_access_usr"
+ENTER_ACCESS_PASSWORD ="enter_access_password"
 
 #软件分区升级定义，
 #当前分区为version0时，需要升级version1分区
@@ -152,29 +160,23 @@ class NE:
     telnet_accesss_user_except_string = "Login:"
     telnet_accesss_password_except_string = "Password:"
     telnet_accesss_welcome_string=""
-#     telnet_accesss_prompt="BNOS>"
     telnet_accesss_prompt=">"
     
+    
     #接入平台命令列表
-    telnet_access_comandDict={SHOW_HOTSTANDBY_GROUP_INFO_ALL:"show hotstandby group-info all",
+    telnet_access_comand_dict={SHOW_HOTSTANDBY_GROUP_INFO_ALL:"show hotstandby group-info all",
                               SHOW_HOTSTANDBY_GROUP_INFO:"show hotstandby group-info",
                               ENABLE_MODE:"enable",
                               ENABLE_PASSWORD:"super",
                               COPY_CONFIG:"copy running-configFile startup-configFile"
                               }
 
-#     telnet_access_commandPromt_dict={telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]:"BNOS",
-#                                     telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO]:"BNOS",
-#                                     telnet_access_comandDict[ENABLE_MODE]:"Password:",
-#                                     telnet_access_comandDict[ENABLE_PASSWORD]:"BNOS",
-#                                     telnet_access_comandDict[COPY_CONFIG]:"BNOS",                                                                        
-#                                }
     #对提示符的判断存在问题
-    telnet_access_commandPromt_dict={telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]:">",
-                                    telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO]:">",
-                                    telnet_access_comandDict[ENABLE_MODE]:"Password:",
-                                    telnet_access_comandDict[ENABLE_PASSWORD]:"#",
-                                    telnet_access_comandDict[COPY_CONFIG]:"#",                                                                        
+    telnet_access_commandPromt_dict={telnet_access_comand_dict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]:">",
+                                    telnet_access_comand_dict[SHOW_HOTSTANDBY_GROUP_INFO]:">",
+                                    telnet_access_comand_dict[ENABLE_MODE]:"Password:",
+                                    telnet_access_comand_dict[ENABLE_PASSWORD]:"#",
+                                    telnet_access_comand_dict[COPY_CONFIG]:"#",                                                                        
                                }    
          
     #管理平台配置    
@@ -196,7 +198,11 @@ class NE:
                                PWD:"pwd",
                                REBOOT:"reboot",    
                                REBOOT_YES:"y",
-                               COPY_RUN_TO_START:"/usr/bin/copy_run_to_startup"
+                               COPY_RUN_TO_START:"/usr/bin/copy_run_to_startup",
+                               ENTER_ACCESS_PRE:"ifconfig eth3 1.0.0.1 netmask 255.255.255.0", 
+                               ENTER_ACCESS:"enter-access",
+#                                ENTER_ACCESS_USR      :"bnas",
+#                                ENTER_ACCESS_PASSWORD :"bnas",
                               }
     telnet_manage_commandPromt_dict={
                                telnet_manage_command_dict[GET_VERSION]:"#",
@@ -208,6 +214,10 @@ class NE:
                                telnet_manage_command_dict[REBOOT]:"Are you sure to reboot",
                                telnet_manage_command_dict[REBOOT_YES]:"#",
                                telnet_manage_command_dict[COPY_RUN_TO_START]:"#",
+                               telnet_manage_command_dict[ENTER_ACCESS_PRE]:"#",
+                                telnet_manage_command_dict[ENTER_ACCESS]:"Login:",
+#                                telnet_manage_command_dict[ENTER_ACCESS_USR]:"Password",
+#                                telnet_manage_command_dict[ENTER_ACCESS_PASSWORD]:">",
                                }
     
 
@@ -241,6 +251,7 @@ class NE:
                       neIp   = "10.1.1.2",
                       accessUserName = "bnas",
                       accessPassword = "bnas",
+                      enablePassword = "super",
                       manageUserName = "root",
                       managePassword = "fitap^_^",
                       logpath="."
@@ -249,6 +260,7 @@ class NE:
         self.neIp   = neIp
         self.accessUserName = accessUserName
         self.accessPassword = accessPassword
+        self.enablePassword = enablePassword
         self.manageUserName = manageUserName
         self.managePassword = managePassword
         self.softwareVersion  = None
@@ -394,43 +406,51 @@ class NE:
         
         self.logging.info(u"**获取当前运行版本分区信息为:%s"%(self.currentSoftPartition))
         
+        
+        result =self.__telnetAccessFromManage()
+        if result !=  NE_OK:
+            controlDebug("can't login ac access platform: %s\n"%(self.neIp))
+            self.logging.error(u"**telnet接入平台失败: 错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止检查网元信息")            
+            return TELNET_ACCESS_FROM_MANAGE_ERR
+        
         #退出管理平台telnet            
         self.telnetManagePlatform.logout()
         self.logging.info(u"**断开管理平台telnet连接") 
 
-        #接入平台登入操作
-        self.logging.info(u"**telnet接入平台")
-        result = self.telnetAccessPlatform.login(self.accessUserName,self.accessPassword)
-        if result != TELNET_OK:
-            controlDebug("can't login ac access platform: %s\n"%(self.neIp))
-            self.logging.error(u"**telnet接入平台失败: 错误码为:%d"%(result))
-            self.logging.info(u"由于意外，终止检查网元信息")
-            return TELNET_ACCESS_PLATFORM_ERR
-
-        self.telnetAccessPlatform.setCommand(self.telnet_access_commandPromt_dict)
+#         #接入平台登入操作
+#         self.logging.info(u"**telnet接入平台")
+#         result = self.telnetAccessPlatform.login(self.accessUserName,self.accessPassword)
+#         if result != TELNET_OK:
+#             controlDebug("can't login ac access platform: %s\n"%(self.neIp))
+#             self.logging.error(u"**telnet接入平台失败: 错误码为:%d"%(result))
+#             self.logging.info(u"由于意外，终止检查网元信息")
+#             return TELNET_ACCESS_PLATFORM_ERR
+# 
+#         self.telnetAccessPlatform.setCommand(self.telnet_access_commandPromt_dict)
 
         
         #下发命令查看热备状态
         #主要是获取网元主备情况，这里还没有完成
-        self.logging.info(u"**获取热备状态信息")
-        result=self.telnetAccessPlatform.runCommand(self.telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL])
-        if result != TELNET_OK:
-            controlDebug("run command %s err\n"%(self.telnet_access_comandDict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]))
-            self.telnetAccessPlatform.logout()
-            self.logging.info(u"**获取热备状态信息失败，错误码为:%d"%(result))
-            self.logging.info(u"**断开接入平台telnet连接") 
-            self.logging.info(u"由于意外，终止检查网元信息")
-            return GET_HOTSTANDBY_STATUS_ERR 
+#         self.logging.info(u"**获取热备状态信息")
+#         result=self.telnetAccessPlatform.runCommand(self.telnet_access_comand_dict[SHOW_HOTSTANDBY_GROUP_INFO_ALL])
+#         if result != TELNET_OK:
+#             controlDebug("run command %s err\n"%(self.telnet_access_comand_dict[SHOW_HOTSTANDBY_GROUP_INFO_ALL]))
+#             self.telnetAccessPlatform.logout()
+#             self.logging.info(u"**获取热备状态信息失败，错误码为:%d"%(result))
+#             self.logging.info(u"**断开接入平台telnet连接") 
+#             self.logging.info(u"由于意外，终止检查网元信息")
+#             return GET_HOTSTANDBY_STATUS_ERR 
         
         #
         # 需要在此处添加网元主备状态的解析        
         #       
         
-        #退出接入平台telnet 
-        self.logging.info(u"**断开接入平台telnet连接") 
-        self.telnetAccessPlatform.logout()        
-        self.neState=u"网元检查正常"
-        self.logging.info(u"完成检查网元信息") 
+#         #退出接入平台telnet 
+#         self.logging.info(u"**断开接入平台telnet连接") 
+#         self.telnetAccessPlatform.logout()        
+#         self.neState=u"网元检查正常"
+#         self.logging.info(u"完成检查网元信息") 
         return NE_OK
         
         
@@ -827,25 +847,27 @@ class NE:
     
                         
     def __enterSuperMode(self):
-        result=self.telnetAccessPlatform.runCommand(self.telnet_access_comandDict[ENABLE_MODE])
+        result=self.telnetAccessPlatform.runCommand(self.telnet_access_comand_dict[ENABLE_MODE])
         self.logging.info(self.telnetAccessPlatform.commandResult)
         if result != TELNET_OK:
-            controlDebug("run command %s err\n"%(self.telnet_access_comandDict[ENABLE_MODE]))
+            controlDebug("run command %s err\n"%(self.telnet_access_comand_dict[ENABLE_MODE]))
             return SUPER_MODE_ERR
-        
-        result=self.telnetAccessPlatform.runCommand(self.telnet_access_comandDict[ENABLE_PASSWORD])
-        self.logging.info(self.telnetAccessPlatform.commandResult)
-        if result != TELNET_OK:
-            controlDebug("run command %s err\n"%(self.telnet_access_comandDict[ENABLE_PASSWORD]))
-            return SUPER_MODE_ERR
-    
+      
+        self.telnetAccessPlatform.telnet.write(self.enablePassword +"\r")
+#         result=self.telnetAccessPlatform.runCommand(self.enablePassword)
+#         self.logging.info(self.telnetAccessPlatform.commandResult)
+#         if result != TELNET_OK:
+#             controlDebug("run command %s err\n"%(self.enablePassword))
+#             return SUPER_MODE_ERR
+#     
         return NE_OK
     
     
     def saveNeConfig(self):
         self.neState="保留网元配置成功"
         result1 = self.savetManagePlatformConfig()
-        result2 = self.saveAccessPlatformConfig()
+#         result2 = self.saveAccessPlatformConfig()
+        result2 = self.saveAccessPlatformConfigFromManage()
 
         if result1 != NE_OK or result2 != NE_OK:
             return SAVE_CONFIG_ERR
@@ -882,6 +904,108 @@ class NE:
         self.neState="保留管理平台配置成功"
         return NE_OK
     
+    def __telnetAccessFromManage(self):
+        '''
+                      从管理平台登入接入平台
+        '''
+        self.logging.info(u"开始从管理平台登入接入平台操作")
+
+        result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[ENTER_ACCESS_PRE])
+        if result != TELNET_OK:
+            controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[ENTER_ACCESS_PRE]))
+            self.telnetManagePlatform.logout()
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止管理平台保存操作")            
+            return ENTER_ACCESS_PRE_ERR
+
+        result=self.telnetManagePlatform.runCommand(self.telnet_manage_command_dict[ENTER_ACCESS])
+        if result != TELNET_OK:
+            controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[ENTER_ACCESS]))
+            self.telnetManagePlatform.logout()
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止管理平台保存操作")            
+            return ENTER_ACCESS_ERR
+    
+        result=self.telnetManagePlatform.runCommandWithExpect(self.accessUserName,"Password")
+        if result != TELNET_OK:
+            controlDebug("run command %s err\n"%(self.accessUserName))
+            self.telnetManagePlatform.logout()
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止管理平台保存操作")            
+            return ENTER_ACCESS_ERR
+         
+        result=self.telnetManagePlatform.runCommandWithExpect(self.accessPassword,">")
+        if result != TELNET_OK:
+            controlDebug("run command %s err\n"%(self.accessPassword))
+            self.telnetManagePlatform.logout()
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止管理平台保存操作")            
+            return ENTER_ACCESS_ERR
+         
+        result=self.telnetManagePlatform.runCommandWithExpect(self.telnet_access_comand_dict[ENABLE_MODE],"Password")
+        if result != TELNET_OK:
+            controlDebug("run command %s err\n"%(self.telnet_manage_command_dict[ENABLE_MODE]))
+            self.telnetManagePlatform.logout()
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止管理平台保存操作")            
+            return ENTER_ACCESS_ERR
+        
+        
+        result=self.telnetManagePlatform.runCommandWithExpect(self.enablePassword,"#")
+        if result != TELNET_OK:
+            controlDebug("run command %s err\n"%(self.enablePassword))
+            self.telnetManagePlatform.logout()
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止管理平台保存操作")            
+            return ENTER_ACCESS_ERR
+         
+        return NE_OK
+
+    
+    def saveAccessPlatformConfigFromManage(self):
+        '''
+                    重管理平台登入接入平台
+        '''
+        self.logging.info(u"开始重管理平台登入接入平台操作")
+        
+        result = self.telnetManagePlatform.login(self.manageUserName, self.managePassword) 
+        if result != TELNET_OK:
+            controlDebug("can't login ac manage platform: %s\n"%(self.neIp))
+            self.logging.error(u"**telnet管理平台失败: 错误码为:%d"%(result))
+            self.logging.info(u"由于意外，终止管理平台配置保存操作")   
+            return TELNET_MANAGE_PLATFORM_ERR 
+        
+        self.telnetManagePlatform.setCommand(self.telnet_manage_commandPromt_dict)
+        self.logging.info(self.telnetManagePlatform.commandResult)
+        
+        result =self.__telnetAccessFromManage()
+        
+        if result != NE_OK:
+            controlDebug("run command %s err\n"%(str(self.__telnetAccessFromManage)))
+            self.telnetManagePlatform.logout()
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止管理平台保存操作")            
+            return ENTER_ACCESS_PRE_ERR
+
+        result=self.telnetManagePlatform.runCommandWithExpect(self.telnet_access_comand_dict[COPY_CONFIG],"#")
+        if result != TELNET_OK:
+            controlDebug("run command %s err\n"%(self.telnet_access_commandPromt_dict[COPY_CONFIG]))
+            self.telnetManagePlatform.logout()
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止管理平台保存操作")            
+            return ENTER_ACCESS_ERR
+        
+        result=self.telnetManagePlatform.runCommandWithExpect("logout","#")
+        if result != TELNET_OK:
+            controlDebug("run command %s err\n"%("logout"))
+            self.telnetManagePlatform.logout()
+            self.logging.info(u"**断开管理平台telnet连接")
+            self.logging.info(u"由于意外，终止管理平台保存操作")            
+            return ENTER_ACCESS_ERR
+        
+        return NE_OK
+        
+    
     def saveAccessPlatformConfig(self):
         '''
                      保留接入平台当前运行配置
@@ -913,11 +1037,11 @@ class NE:
         
         #下发配置保留命令
         self.logging.info(u"**下发配置保留命令")
-        result=self.telnetAccessPlatform.runCommand(self.telnet_access_comandDict[COPY_CONFIG])
+        result=self.telnetAccessPlatform.runCommand(self.telnet_access_comand_dict[COPY_CONFIG])
         self.logging.info(self.telnetAccessPlatform.commandResult)
         
         if result != TELNET_OK:
-            controlDebug("run command %s err\n"%(self.telnet_access_comandDict[COPY_CONFIG]))
+            controlDebug("run command %s err\n"%(self.telnet_access_comand_dict[COPY_CONFIG]))
             self.telnetAccessPlatform.logout()
             self.logging.info(u"**断开接入平台telnet连接")
             self.logging.info(u"由于意外，终止接入平台配置保存操作")
@@ -1084,9 +1208,10 @@ class updateConfig:
                     neIp=self.config.get(section,"neIp")
                     accessUserName=self.config.get(section,"accessUserName")
                     accessPassword=self.config.get(section,"accessPassword")
+                    enablePassword=self.config.get(section,"enablePassword")
                     manageUserName=self.config.get(section,"manageUserName")                                        
                     managePassword=self.config.get(section,"managePassword")
-                    neLists[neName] = NE(neName,neIp,accessUserName,accessPassword,manageUserName,managePassword,path)
+                    neLists[neName] = NE(neName,neIp,accessUserName,accessPassword,enablePassword,manageUserName,managePassword,path)
         except:
             traceback.print_exc()
             return READ_CONFIG_ERR
@@ -1112,6 +1237,7 @@ class updateConfig:
                 self.config.set(NE,"neIp",self.neLists[neKey].neIp)
                 self.config.set(NE,"accessUserName",self.neLists[neKey].accessUserName)
                 self.config.set(NE,"accessPassword",self.neLists[neKey].accessPassword)
+                self.config.set(NE,"enablePassword",self.neLists[neKey].enablePassword)
                 self.config.set(NE,"manageUserName",self.neLists[neKey].manageUserName)    
                 self.config.set(NE,"managePassword",self.neLists[neKey].managePassword)
             except:
@@ -1135,13 +1261,20 @@ class updateConfig:
              
 if __name__ == '__main__':
     
-    testWriteNeConfig = updateConfig()
-    testWriteNeConfig.setConfigFile("test.conf")
-    ne=NE("AC1", "1.1.1.1", "bnas", "bnas", "root", "fitap")
-    testWriteNeConfig.addNe(ne)
-#     testWriteNeConfig.addNe("AC2", "1.1.1.1", "bnas", "bnas", "root", "fitap")
-#     testWriteNeConfig.addNe("AC3", "1.1.1.1", "bnas", "bnas", "root", "fitap")
-    testWriteNeConfig.saveConfig()
+    ne1=NE("AC1", "10.1.1.2", "bnas", "bnas", "super","root", "fitap^_^")
+    ne1.saveAccessPlatformConfigFromManage()
+    
+#     testWriteNeConfig = updateConfig()
+#     testWriteNeConfig.setConfigFile("test.conf")
+#     ne1=NE("AC1", "1.1.1.1", "bnas", "bnas", "enable","root", "fitap")
+#     ne2=NE("AC2", "1.1.1.2", "bnas", "bnas", "enable","root", "fitap")
+#     ne3=NE("AC3", "1.1.1.3", "bnas", "bnas", "enable","root", "fitap")
+#     testWriteNeConfig.addNe(ne1)
+#     testWriteNeConfig.addNe(ne2)
+#     testWriteNeConfig.addNe(ne3)
+# #     testWriteNeConfig.addNe("AC2", "1.1.1.1", "bnas", "bnas", "super","root", "fitap")
+# #     testWriteNeConfig.addNe("AC3", "1.1.1.1", "bnas", "bnas", "super","root", "fitap")
+#     testWriteNeConfig.saveConfig()
 # 
 #     
 #     testReadNeConfig = updateConfig()

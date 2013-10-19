@@ -224,26 +224,6 @@ class editNEDialog(QDialog):
                     return
                 
             if runResult == NeThread.FUN_ERR:
-#                 if self.thread.realResult[self.ne.telnetManagePlatformTest] != NE_OK:
-#                     message=u"无法telnet管理平台，请检查！"
-#                     QMessageBox.information(self,u"警告",message)
-#                     self.setEnabled(True)
-#                     self.thread.signal.sig.disconnect(self.finish)
-#                     return
-#                 
-#                 if self.thread.realResult[self.ne.telnetAccessPlatformTest] != NE_OK:   
-#                     message=u"无法telnet接入平台，请检查！"
-#                     QMessageBox.information(self,u"警告",message)
-#                     self.setEnabled(True)
-#                     self.thread.signal.sig.disconnect(self.finish)
-#                     return
-# 
-#                 if self.thread.realResult[self.ne.checkNe] != NE_OK:   
-#                     message=u"检查网元失败，请检查！"
-#                     QMessageBox.information(self,u"警告",message)
-#                     self.setEnabled(True)
-#                     self.thread.signal.sig.disconnect(self.finish)
-#                     return                
                 
                 telnetManagePlatformTestStr = str(NE.telnetManagePlatformTest).rstrip('>').lstrip("<").split()[2]
                 if runFun.find(telnetManagePlatformTestStr) != -1:
@@ -307,6 +287,7 @@ class editNEDialog(QDialog):
         managePassword = self.ui.lineEditManagePassword.text()
         accessUserName = self.ui.lineEditAccessUser.text()
         accessPassword = self.ui.lineEditAccessPassword.text()
+        enablePassword = self.ui.lineEditEnablePassword.text()
                 
         #确认各输入框是否为空，如果为空，需要重新输入        
         if (neName         == "" or  
@@ -314,7 +295,8 @@ class editNEDialog(QDialog):
             accessUserName == "" or  
             accessPassword == "" or 
             manageUserName == "" or
-            managePassword == ""):
+            managePassword == "" or
+            enablePassword == "" ):
             message=u"有输入框为空，请完成！"
             QMessageBox.information(self,u"警告",message)
             self.setEnabled(True)
@@ -333,17 +315,10 @@ class editNEDialog(QDialog):
                  neIp.encode("utf-8"),
                  accessUserName.encode("utf-8"),
                  accessPassword.encode("utf-8"),
+                 enablePassword.encode("utf-8"),
                  manageUserName.encode("utf-8"),
                  managePassword.encode("utf-8"),
                  self.parent().todaylogPath+self.parent().directorySeparator)
-
-#         self.ne =NE(neName,
-#                  neIp,
-#                  accessUserName,
-#                  accessPassword,
-#                  manageUserName,
-#                  managePassword,
-#                  self.parent().todaylogPath+self.parent().directorySeparator)
                
         #检查网元是否已经存在，如果存在，就不用再添加了
         if self.parent().checkNeExist(self.ne) != NE_NOT_EXIST:
@@ -356,7 +331,7 @@ class editNEDialog(QDialog):
         #这里使用线程运行，以防止界面假死
         self.thread.clearThreadfun()
         self.thread.setThreadfun(1,self.ne.telnetManagePlatformTest , NE_OK ,"None")
-        self.thread.setThreadfun(2,self.ne.telnetAccessPlatformTest , NE_OK ,"None")
+#         self.thread.setThreadfun(2,self.ne.telnetAccessPlatformTest , NE_OK ,"None")
         self.thread.setThreadfun(3,self.ne.checkNe , NE_OK)
         
         

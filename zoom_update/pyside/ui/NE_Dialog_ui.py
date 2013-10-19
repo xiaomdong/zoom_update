@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'NE_Dialog.ui'
 #
-# Created: Thu Sep 26 20:17:15 2013
+# Created: Sat Oct 19 11:34:11 2013
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,9 +12,11 @@ from PySide import QtCore, QtGui
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(309, 265)
+        Dialog.resize(302, 291)
         self.gridLayout_2 = QtGui.QGridLayout(Dialog)
         self.gridLayout_2.setObjectName("gridLayout_2")
+        spacerItem = QtGui.QSpacerItem(207, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.gridLayout_2.addItem(spacerItem, 1, 0, 1, 1)
         self.pushButtonOK = QtGui.QPushButton(Dialog)
         self.pushButtonOK.setObjectName("pushButtonOK")
         self.gridLayout_2.addWidget(self.pushButtonOK, 1, 1, 1, 1)
@@ -36,7 +38,7 @@ class Ui_Dialog(object):
         self.gridLayout.addWidget(self.lineEditIP, 1, 1, 1, 1)
         self.label = QtGui.QLabel(self.groupBox_3)
         self.label.setObjectName("label")
-        self.gridLayout.addWidget(self.label, 2, 0, 1, 2)
+        self.gridLayout.addWidget(self.label, 2, 0, 1, 1)
         self.labelManageUser = QtGui.QLabel(self.groupBox_3)
         self.labelManageUser.setObjectName("labelManageUser")
         self.gridLayout.addWidget(self.labelManageUser, 3, 0, 1, 1)
@@ -52,7 +54,7 @@ class Ui_Dialog(object):
         self.gridLayout.addWidget(self.lineEditManagePassword, 4, 1, 1, 1)
         self.label_2 = QtGui.QLabel(self.groupBox_3)
         self.label_2.setObjectName("label_2")
-        self.gridLayout.addWidget(self.label_2, 5, 0, 1, 2)
+        self.gridLayout.addWidget(self.label_2, 5, 0, 1, 1)
         self.labelAccessUser = QtGui.QLabel(self.groupBox_3)
         self.labelAccessUser.setObjectName("labelAccessUser")
         self.gridLayout.addWidget(self.labelAccessUser, 6, 0, 1, 1)
@@ -66,9 +68,14 @@ class Ui_Dialog(object):
         self.lineEditAccessPassword.setEchoMode(QtGui.QLineEdit.Password)
         self.lineEditAccessPassword.setObjectName("lineEditAccessPassword")
         self.gridLayout.addWidget(self.lineEditAccessPassword, 7, 1, 1, 1)
+        self.labelEnablePassword = QtGui.QLabel(self.groupBox_3)
+        self.labelEnablePassword.setObjectName("labelEnablePassword")
+        self.gridLayout.addWidget(self.labelEnablePassword, 8, 0, 1, 1)
+        self.lineEditEnablePassword = QtGui.QLineEdit(self.groupBox_3)
+        self.lineEditEnablePassword.setEchoMode(QtGui.QLineEdit.Password)
+        self.lineEditEnablePassword.setObjectName("lineEditEnablePassword")
+        self.gridLayout.addWidget(self.lineEditEnablePassword, 8, 1, 1, 1)
         self.gridLayout_2.addWidget(self.groupBox_3, 0, 0, 1, 2)
-        spacerItem = QtGui.QSpacerItem(207, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.gridLayout_2.addItem(spacerItem, 1, 0, 1, 1)
         self.labelNE.setBuddy(self.lineEditNE)
         self.labelIP.setBuddy(self.lineEditIP)
         self.labelManageUser.setBuddy(self.lineEditManageUser)
@@ -91,4 +98,5 @@ class Ui_Dialog(object):
         self.label_2.setText(QtGui.QApplication.translate("Dialog", "接入平台", None, QtGui.QApplication.UnicodeUTF8))
         self.labelAccessUser.setText(QtGui.QApplication.translate("Dialog", "用户：", None, QtGui.QApplication.UnicodeUTF8))
         self.labelAccessPassword.setText(QtGui.QApplication.translate("Dialog", "密码：", None, QtGui.QApplication.UnicodeUTF8))
+        self.labelEnablePassword.setText(QtGui.QApplication.translate("Dialog", "enable密码：", None, QtGui.QApplication.UnicodeUTF8))
 
