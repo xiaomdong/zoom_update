@@ -417,7 +417,7 @@ class updateWindow(QMainWindow):
         self.updateMessage[str(QThread.sleep).rstrip('>').lstrip("<").split()[2]]          = u"复位启动中"
         self.updateMessage[str(NE.afterRebootTest).rstrip('>').lstrip("<").split()[2]]     = u"升级复位后连接检测"
         self.updateMessage[str(NE.afterRebootCheck).rstrip('>').lstrip("<").split()[2]]    = u"升级复位后状态检测"
-        
+        self.updateMessage[str(NE.afterRebootConfigCheck).rstrip('>').lstrip("<").split()[2]]    = u"升级复位后配置检测"
         
         
         #目录分隔符
@@ -581,7 +581,8 @@ class updateWindow(QMainWindow):
         for action in self.ui.tableViewNe.actions():
             action.setDisabled(True)
         
-
+        self.ui.groupBoxCheckOption.setDisabled(True)
+            
     def setUIstatusEnable(self):
         self.ui.pushButtonCancel.setDisabled(True)
         
@@ -595,6 +596,7 @@ class updateWindow(QMainWindow):
         self.ui.pushButtonAddVersionFile.setDisabled(False)
         for action in self.ui.tableViewNe.actions():
             action.setDisabled(False)
+        self.ui.groupBoxCheckOption.setDisabled(False)
                 
     def checkNeSlot(self,message):
         '''接收检查线程反馈的消息，进行处理，根据结果在界面上反映'''
@@ -821,48 +823,68 @@ class updateWindow(QMainWindow):
             
             #升级前检测
             _step=_step+1
+            #self.ui.checkBoxCheckNe 
             self.NEthreads[row].setThreadfun(_step,ne.checkNe, NE_OK, row*1000+2)
                        
             #检测升级版本是否与当前运行版本存在冲突            
             _step=_step+1
+            #self.ui.checkBoxCheckUpdateFile
             self.NEthreads[row].setThreadfun(_step,ne.checkUpdateFile, NE_OK, row*1000+2,self.versionFile)
 
             #保留当前网元配置
             _step=_step+1
-            self.NEthreads[row].setThreadfun(_step,ne.saveNeConfig, NE_OK, row*1000+5)
+            if self.ui.checkBoxSaveNeConfig.checkState() == Qt.Checked:
+                self.NEthreads[row].setThreadfun(_step,ne.saveNeConfig, NE_OK, row*1000+5)
             
             #下载网元配置到本地
             _step=_step+1
+            #self.ui.checkBoxSaveNeConfigToLocal
             self.NEthreads[row].setThreadfun(_step,ne.saveNeConfigToLocal, NE_OK, row*1000+5)
            
             #上传版本文件到网元
             _step=_step+1
-            self.NEthreads[row].setThreadfun(_step,ne.updateVersionFile, NE_OK, row*1000+20,self.versionFile, self.versionFilePath)
+            if self.ui.checkBoxUpdateVersionFile.checkState() == Qt.Checked:
+                self.NEthreads[row].setThreadfun(_step,ne.updateVersionFile, NE_OK, row*1000+20,self.versionFile, self.versionFilePath)
             
             #升级版本文件
             _step=_step+1
-            self.NEthreads[row].setThreadfun(_step,ne.updateSoft,NE_OK, row*1000+25, self.versionFile, ne.willUpdateSoftPartition)
+            if self.ui.checkBoxUpgradeSoft.checkState() == Qt.Checked:
+                self.NEthreads[row].setThreadfun(_step,ne.updateSoft,NE_OK, row*1000+25, self.versionFile, ne.willUpdateSoftPartition)
            
             #激活版本文件
             _step=_step+1
-            self.NEthreads[row].setThreadfun(_step,ne.activeSoft,NE_OK, row*1000+30, ne.willUpdateSoftPartition)
+            if self.ui.checkBoxActiveSoft.checkState() == Qt.Checked:
+                self.NEthreads[row].setThreadfun(_step,ne.activeSoft,NE_OK, row*1000+30, ne.willUpdateSoftPartition)
             
             
             #复位网元,进度是35%
             _step=_step+1
-            self.NEthreads[row].setThreadfun(_step,ne.reboot,NE_OK, row*1000+35)
+            if self.ui.checkBoxReboot.checkState() == Qt.Checked: 
+                self.NEthreads[row].setThreadfun(_step,ne.reboot,NE_OK, row*1000+35)
                
             #复位等待  
-            for _step in range(_step+1,45):
-                self.NEthreads[row].setThreadfun(_step,QThread.sleep,None, row*1000+40+_step,10)
-             
+            if self.ui.checkBoxReboot.checkState() == Qt.Checked:
+                for _step in range(_step+1,45):
+                    self.NEthreads[row].setThreadfun(_step,QThread.sleep,None, row*1000+40+_step,10)
+            else:
+                _step=44
+                 
             #复位后连接测试      
             _step=_step+1
-            self.NEthreads[row].setThreadfun(_step,ne.afterRebootTest,NE_OK, row*1000+90)
+            if self.ui.checkBoxAfterRebootConnectTest.checkState() == Qt.Checked: 
+                self.NEthreads[row].setThreadfun(_step,ne.afterRebootTest,NE_OK, row*1000+90)
              
             #复位网元正常后，网元检测 
             _step=_step+1
-            self.NEthreads[row].setThreadfun(_step,ne.afterRebootCheck, NE_OK, row*1000+99,self.ui.lineEditVersion.text())
+            if self.ui.checkBoxAfterRebootTest.checkState() == Qt.Checked:
+                self.NEthreads[row].setThreadfun(_step,ne.afterRebootCheck, NE_OK, row*1000+95,self.ui.lineEditVersion.text())
+
+
+            #复位网元正常后，网元检测 
+            _step=_step+1
+            if self.ui.checkBoxfterRebootConfigCheck.checkState() == Qt.Checked:
+                self.NEthreads[row].setThreadfun(_step,ne.afterRebootConfigCheck, NE_OK, row*1000+99)
+
                 
             self.NEthreads[row].signal.sig.connect(self.updataAllSlot)
             

@@ -97,9 +97,15 @@
      </widget>
     </item>
     <item row="1" column="0">
-     <widget class="QGroupBox" name="groupBox">
+     <widget class="QGroupBox" name="groupBoxCheckOption">
       <property name="title">
        <string>升级选项</string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
+      </property>
+      <property name="checked">
+       <bool>false</bool>
       </property>
       <layout class="QGridLayout" name="gridLayout_3">
        <item row="2" column="0">
@@ -107,12 +113,18 @@
          <property name="text">
           <string>7.激活版本文件</string>
          </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
         </widget>
        </item>
        <item row="1" column="1">
         <widget class="QCheckBox" name="checkBoxUpdateVersionFile">
          <property name="text">
           <string>5.上传版本文件</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -134,12 +146,21 @@
          <property name="text">
           <string>8.复位</string>
          </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
         </widget>
        </item>
        <item row="0" column="1">
         <widget class="QCheckBox" name="checkBoxCheckUpdateFile">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="text">
           <string>2.检测版本文件</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -148,19 +169,28 @@
          <property name="text">
           <string>3.保存当前运行配置</string>
          </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
         </widget>
        </item>
        <item row="1" column="2">
-        <widget class="QCheckBox" name="checkBoxUpdateSoft">
+        <widget class="QCheckBox" name="checkBoxUpgradeSoft">
          <property name="text">
           <string>6.释放版本文件</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
        <item row="2" column="2">
-        <widget class="QCheckBox" name="checkBoxAfterRebootTest">
+        <widget class="QCheckBox" name="checkBoxAfterRebootConnectTest">
          <property name="text">
           <string>9.复位后连通性检测</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -178,9 +208,12 @@
         </widget>
        </item>
        <item row="3" column="0">
-        <widget class="QCheckBox" name="afterRebootCheck">
+        <widget class="QCheckBox" name="checkBoxAfterRebootTest">
          <property name="text">
           <string>10.升级后检测</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -188,6 +221,9 @@
         <widget class="QCheckBox" name="checkBoxfterRebootConfigCheck">
          <property name="text">
           <string>11.升级后配置检测</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>

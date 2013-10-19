@@ -168,7 +168,7 @@ class NE:
                               SHOW_HOTSTANDBY_GROUP_INFO:"show hotstandby group-info",
                               ENABLE_MODE:"enable",
                               ENABLE_PASSWORD:"super",
-                              COPY_CONFIG:"copy running-configFile startup-configFile"
+                              COPY_CONFIG:"copy running-config startup-config"
                               }
 
     #对提示符的判断存在问题
@@ -176,7 +176,7 @@ class NE:
                                     telnet_access_comand_dict[SHOW_HOTSTANDBY_GROUP_INFO]:">",
                                     telnet_access_comand_dict[ENABLE_MODE]:"Password:",
                                     telnet_access_comand_dict[ENABLE_PASSWORD]:"#",
-                                    telnet_access_comand_dict[COPY_CONFIG]:"#",                                                                        
+                                    telnet_access_comand_dict[COPY_CONFIG]:"Save Config File to Flash Succeed.",                                                                        
                                }    
          
     #管理平台配置    
@@ -778,10 +778,6 @@ class NE:
         if result != NE_OK:
             return result 
         
-        result = self.saveNeConfigToLocal()
-        if result != NE_OK:
-            return result 
-        
         #判断升级的版本是否是预期的版本
         if versionName != self.softwareVersion:
             self.logging.warning(u"升级后的版本%s与预期%s不符"%(self.softwareVersion,versionName))
@@ -790,27 +786,32 @@ class NE:
             self.logging.info(u"升级后的版本%s与预期%s一致"%(self.softwareVersion,versionName))
         
         #判断升级的路径是否是预期的路径        
-#         if _willUpdateSoftPartition != self.currentSoftPartition:
-#             self.logging.warning(u"升级后的软件路径%s与预期不符%s"%(self.currentSoftPartition,_willUpdateSoftPartition))
-#             return UPDATE_PARTITION_ERR 
-                
-        #比较升级前后保留配置文件数目和名称是否一致        
-        dirCmpObject =filecmp.dircmp(_saveConfigPath,self.saveConfigPath)        
-        if dirCmpObject.diff_files !=[]:
-            self.logging.warning(u"升级前后保留的配置文件不一致")
-            self.logging.warning(u"升级前后保留的配置文件路径:%s",_saveConfigPath)
-            self.logging.warning(u"升级前后保留的配置文件路径:%s",self.saveConfigPath)
-            self.logging.warning(u"不同文件为: %s",dirCmpObject.diff_files)
-            return CONFIG_FILE_DIFF
-        
-        #比较升级前后保留的配置文件内容是否一致
-        result = filecmp.cmpfiles(_saveConfigPath,self.saveConfigPath,dirCmpObject.common)
-        if result[1]!=[] or result[2]!=[]:
-            self.logging.warning(u"升级前后保留的配置文件内容不一致")
-            self.logging.warning(u"升级前后保留的配置文件路径:%s",_saveConfigPath)
-            self.logging.warning(u"升级前后保留的配置文件路径:%s",self.saveConfigPath)
-            self.logging.warning(u"不同文件为: %s",result[1:3])
-            return CONFIG_FILE_CONTEXT_DIFF    
+        if _willUpdateSoftPartition != self.currentSoftPartition:
+            self.logging.warning(u"升级后的软件路径%s与预期不符%s"%(self.currentSoftPartition,_willUpdateSoftPartition))
+            return UPDATE_PARTITION_ERR 
+
+
+#         result = self.saveNeConfigToLocal()
+#         if result != NE_OK:
+#             return result 
+#                 
+#         #比较升级前后保留配置文件数目和名称是否一致        
+#         dirCmpObject =filecmp.dircmp(_saveConfigPath,self.saveConfigPath)        
+#         if dirCmpObject.diff_files !=[]:
+#             self.logging.warning(u"升级前后保留的配置文件不一致")
+#             self.logging.warning(u"升级前后保留的配置文件路径:%s",_saveConfigPath)
+#             self.logging.warning(u"升级前后保留的配置文件路径:%s",self.saveConfigPath)
+#             self.logging.warning(u"不同文件为: %s",dirCmpObject.diff_files)
+#             return CONFIG_FILE_DIFF
+#         
+#         #比较升级前后保留的配置文件内容是否一致
+#         result = filecmp.cmpfiles(_saveConfigPath,self.saveConfigPath,dirCmpObject.common)
+#         if result[1]!=[] or result[2]!=[]:
+#             self.logging.warning(u"升级前后保留的配置文件内容不一致")
+#             self.logging.warning(u"升级前后保留的配置文件路径:%s",_saveConfigPath)
+#             self.logging.warning(u"升级前后保留的配置文件路径:%s",self.saveConfigPath)
+#             self.logging.warning(u"不同文件为: %s",result[1:3])
+#             return CONFIG_FILE_CONTEXT_DIFF    
         
         self.logging.info(u"完成网元复位后版本和配置校验")   
         return NE_OK
@@ -950,7 +951,6 @@ class NE:
             self.logging.info(u"由于意外，终止管理平台保存操作")            
             return ENTER_ACCESS_ERR
         
-        
         result=self.telnetManagePlatform.runCommandWithExpect(self.enablePassword,"#")
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.enablePassword))
@@ -987,7 +987,7 @@ class NE:
             self.logging.info(u"由于意外，终止管理平台保存操作")            
             return ENTER_ACCESS_PRE_ERR
 
-        result=self.telnetManagePlatform.runCommandWithExpect(self.telnet_access_comand_dict[COPY_CONFIG],"#")
+        result=self.telnetManagePlatform.runCommandWithExpect(self.telnet_access_comand_dict[COPY_CONFIG],"Save Config File to Flash Succeed.")
         if result != TELNET_OK:
             controlDebug("run command %s err\n"%(self.telnet_access_commandPromt_dict[COPY_CONFIG]))
             self.telnetManagePlatform.logout()
@@ -995,14 +995,20 @@ class NE:
             self.logging.info(u"由于意外，终止管理平台保存操作")            
             return ENTER_ACCESS_ERR
         
-        result=self.telnetManagePlatform.runCommandWithExpect("logout","#")
-        if result != TELNET_OK:
-            controlDebug("run command %s err\n"%("logout"))
-            self.telnetManagePlatform.logout()
-            self.logging.info(u"**断开管理平台telnet连接")
-            self.logging.info(u"由于意外，终止管理平台保存操作")            
-            return ENTER_ACCESS_ERR
         
+        self.telnetManagePlatform.telnet.write("\r")
+        self.telnetManagePlatform.telnet.write("\r")
+         
+        self.telnetManagePlatform.telnet.write("logout\r")
+        
+#         result=self.telnetManagePlatform.runCommandWithExpect("logout","Connection closed by foreign host")
+#         if result != TELNET_OK:
+#             controlDebug("run command %s err\n"%("logout"))
+#             self.telnetManagePlatform.logout()
+#             self.logging.info(u"**断开管理平台telnet连接")
+#             self.logging.info(u"由于意外，终止管理平台保存操作")            
+#             return ENTER_ACCESS_ERR
+        self.telnetManagePlatform.logout()
         return NE_OK
         
     

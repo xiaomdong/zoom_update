@@ -139,7 +139,9 @@ class telnetAC():
             #-1 命令输入后的提示符，表示返回值与预期不符
             if result[0] == -1:
                 telnetDebug("command: %scan't match the except string" % (command))
+                self.commandResult = result[2]
                 self.status = COMMAND_RUN_ERR
+                return COMMAND_RUN_ERR
             else:
                 self.commandResult = result[2]
                 self.status = TELNET_OK
