@@ -381,7 +381,7 @@ class NE:
             #硬件型号取硬件code的第2和第3字节
             self.hardwareVersion=hardwareDict[int(result[0][HARDWARE_CODE][2:4])]
         except:
-            self.telnetManagePlatform.logout()
+#             self.telnetManagePlatform.logout()
             self.logging.error(u"**解析硬件版本信息出错")
             self.logging.info(u"**断开管理平台telnet连接")
             self.logging.info(u"由于意外，终止检查网元信息")

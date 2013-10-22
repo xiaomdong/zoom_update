@@ -12,14 +12,14 @@ import re
 #from config import *
 import traceback
 
-logFlag=1
-printdebugFlag = 1
-uiDebugFlag = 1
-controlDebugFlag = 1
-protocolFlag = 1
+logFlag=0
+printdebugFlag = 0
+uiDebugFlag = 0
+controlDebugFlag = 0
+protocolFlag = 0
 
-telnetFlag = 1
-ftpFlag = 1
+telnetFlag = 0
+ftpFlag = 0
 
 classFlag = 0
 

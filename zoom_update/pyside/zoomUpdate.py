@@ -105,17 +105,10 @@ class NeThread(QThread):
          
     def run(self):
         '''运行NE thread'''
-#         uiDebug("")
-#         uiDebug("")
         uiDebug("**** NeThread run stat ")
-#         uiDebug("")
-#         uiDebug("")
-        
-#         self.breakFlag    = True
         for key in self.funs.keys():
             fun =self.funs[key]
             #运行函数，将函数的运行结果保留到，self.realResult[fun]
-#             uiDebug("**** NeThread run fun: %s "%(str(fun)))
             
             self.signal.sig.emit(self.BEGIN_RUN_FUN+":"+str(fun)+"="+str(self.emit[key]))
             uiDebug("emit: "+self.BEGIN_RUN_FUN+":"+str(fun)+"="+str(self.emit[key]))
@@ -149,8 +142,6 @@ class NeThread(QThread):
         self.signal.sig.emit(self.FINISH_ALL_FUN+":"+str(fun)+"="+str(self.emit[key]))
         uiDebug("emit: "+self.FINISH_ALL_FUN+":"+str(fun)+"="+str(self.emit[key]))
         uiDebug("**** NeThread run end ")
-#         uiDebug("")
-#         uiDebug("")    
         return 
 
 
@@ -161,16 +152,16 @@ def pyparsingEmit(Data):
           1.  返回EMIT_SIGNAL_ERR
           2.  列表[RUN_RUSULT，RUN_FUN，RUN_RUSULT_DETIAL]     
     '''
-    uiDebug("")
-    uiDebug("***pyparsingEmit start")
-    uiDebug("pyparsing data: %s"%(Data))
+#     uiDebug("")
+#     uiDebug("***pyparsingEmit start")
+#     uiDebug("pyparsing data: %s"%(Data))
     resultValue=[]
     result=NeThread.emitPyparsingStr.searchString(Data)
-    uiDebug("pyparsing result: %s"%(str(result)))
+#     uiDebug("pyparsing result: %s"%(str(result)))
     if len(result)==0:
-        uiDebug("return EMIT_SIGNAL_ERR")
-        uiDebug("***pyparsingEmit end")
-        uiDebug("")
+#         uiDebug("return EMIT_SIGNAL_ERR")
+#         uiDebug("***pyparsingEmit end")
+#         uiDebug("")
         return EMIT_SIGNAL_ERR
     
     resultCode=result[0][NeThread.RUN_RUSULT]
@@ -183,7 +174,7 @@ def pyparsingEmit(Data):
     return resultValue
     uiDebug("return value %s"%(str(resultValue)))
     uiDebug("***pyparsingEmit end")
-    uiDebug("")
+#     uiDebug("")
     
 class editNEDialog(QDialog):
     '''网元信息编辑框'''
@@ -220,7 +211,6 @@ class editNEDialog(QDialog):
                     #这里写的不好,直接修改了parent的成员变量
                     self.parent().tempNe=self.ne
                     self.accept()
-#                     self.thread.signal.sig.disconnect(self.finish)
                     return
                 
             if runResult == NeThread.FUN_ERR:
@@ -228,25 +218,22 @@ class editNEDialog(QDialog):
                 telnetManagePlatformTestStr = str(NE.telnetManagePlatformTest).rstrip('>').lstrip("<").split()[2]
                 if runFun.find(telnetManagePlatformTestStr) != -1:
                     message=u"无法telnet管理平台，请检查！"
-                    QMessageBox.information(self,u"警告",message)
+                    QMessageBox.information(self,u"提示",message)
                     self.setEnabled(True)
-#                     self.thread.signal.sig.disconnect(self.finish)
                     return
                 
                 telnetAccessPlatformTestStr = str(NE.telnetAccessPlatformTest).rstrip('>').lstrip("<").split()[2]
                 if runFun.find(telnetAccessPlatformTestStr) != -1:
                     message=u"无法telnet接入平台，请检查！"
-                    QMessageBox.information(self,u"警告",message)
+                    QMessageBox.information(self,u"提示",message)
                     self.setEnabled(True)
-#                     self.thread.signal.sig.disconnect(self.finish)
                     return
                 
                 checkNeStr = str(NE.checkNe).rstrip('>').lstrip("<").split()[2]
                 if runFun.find(checkNeStr) != -1:
                     message=u"检查网元失败，请检查！"
-                    QMessageBox.information(self,u"警告",message)
+                    QMessageBox.information(self,u"提示",message)
                     self.setEnabled(True)
-#                     self.thread.signal.sig.disconnect(self.finish)
                     return  
                 
         else:
@@ -298,14 +285,14 @@ class editNEDialog(QDialog):
             managePassword == "" or
             enablePassword == "" ):
             message=u"有输入框为空，请完成！"
-            QMessageBox.information(self,u"警告",message)
+            QMessageBox.information(self,u"提示",message)
             self.setEnabled(True)
             uiDebug("**** editNEDialog confirm end 1")
             return
         
         if self.ipCheck(self.ui.lineEditIP.text()) != ZOOM_OK:
             message=u"IP地址格式不正确"
-            QMessageBox.information(self,u"警告",message)
+            QMessageBox.information(self,u"提示",message)
             self.setEnabled(True)
             uiDebug("**** editNEDialog confirm end 2")
             return
@@ -323,7 +310,7 @@ class editNEDialog(QDialog):
         #检查网元是否已经存在，如果存在，就不用再添加了
         if self.parent().checkNeExist(self.ne) != NE_NOT_EXIST:
             message=u"已有相同命名或者IP的网元存在，请修改"
-            QMessageBox.information(self,u"警告",message)
+            QMessageBox.information(self,u"提示",message)
             self.setEnabled(True)
             uiDebug("**** editNEDialog confirm end 3")
             return
@@ -389,6 +376,8 @@ class updateWindow(QMainWindow):
         QObject.connect(self.ui.actionSaveConfig, SIGNAL("activated()"), self, SLOT("saveConfig()"))
         QObject.connect(self.ui.actionSaveAs, SIGNAL("activated()"), self, SLOT("saveConfigAs()"))
         
+        QObject.connect(self.ui.actionAbout, SIGNAL("activated()"), self, SLOT("about()"))
+        
         
         QObject.connect(self.ui.pushButtonCheckNe, SIGNAL("clicked()"), self, SLOT("checkNe()"))
         QObject.connect(self.ui.pushButtonUpdateAll, SIGNAL("clicked()"), self, SLOT("updateAll()"))
@@ -450,9 +439,32 @@ class updateWindow(QMainWindow):
         self.logging.addHandler(fd)
         self.logging.setLevel(logging.INFO)
         self.logging.info(u"开始运行升级软件")
+         
         
         #创建contextMenu
         self.createNEContextMenu()
+            
+    def about(self):
+        '''about'''
+        aboutInfo = u'''<HTML>
+         <p> AC升级工具：1.0rc </p>
+         <p> 功能支持：AC软件自动升级功能，支持多台AC同时升级。</p>
+         <p> 注意事项 ：</p>
+         <p> 1.仅适用于mips平台AC。</p>
+         <p> 2.此工具在一台pc上只能运行一个实例，无法打开多个。</p>
+         <p> 3.此工具运行后，将在执行文件相同目录下建立名称为"log"的目录，</p>
+         <p> 在log目录下，将依据软件运行的时间，以"年月日"为名称建立每天的日志目录。</p>
+         <p> 在每天的日志目录下会建立"operation.log"日志，记录升级软件的操作过程，</p>
+         <p> 同时还会以"网元名称_ip"为名称建立网元的升级日志目录。在网元的升级日志 </p>
+         <p> 目录下会建立"log"日志文件，用于记录网元的操作信息，同时会按照升级过程中</p>
+         <p> 保留配置的情况，以"config_年月日时分秒"为名称建立配置保留目录，升级过程</p>
+         <p> 中保留的配置会保存在这些目录中。</p>
+         <p> 4.升级开始后，可以通过点击取消按钮，取消选中网元的升级动作，但是取消动作</p>
+         <p> 只在升级复位之前的阶段生效，即如果升级过程已经执行了升级复位动作，将无法</p>
+         <p> 执行取消操作。</p>
+         </HTML>'''
+        QMessageBox.about(self, u"说明", aboutInfo)
+ 
             
     def createNEContextMenu(self):
         '''添加用户信息快捷菜单'''
@@ -481,11 +493,11 @@ class updateWindow(QMainWindow):
         
         self.ui.tableViewNe.setContextMenuPolicy(Qt.ActionsContextMenu)
     
-    def addNEaction(self):
-        print self.ui.tableViewNe.actions()
-        print self.NEs
-        print self.NEthreads
-        self.cancelOperation()
+#     def addNEaction(self):
+#         print self.ui.tableViewNe.actions()
+#         print self.NEs
+#         print self.NEthreads
+#         self.cancelOperation()
 #         index = self.ui.tableViewNe.selectionModel().currentIndex()
 #         print "select "
 #         print index
@@ -517,12 +529,12 @@ class updateWindow(QMainWindow):
     def selectAllNE(self):
         index = self.ui.tableViewNe.currentIndex()
         model =self.netModel
-        print type(model)
+#         print type(model)
         rowCount = model.rowCount(index.parent())
         for row in range(0,rowCount):
             item=model.item(row, showColumn[NE_NAME])
             item.setCheckState(Qt.Checked)
-            print item.checkState()
+#             print item.checkState()
     
     def selectNoneNE(self):
         index = self.ui.tableViewNe.currentIndex()
@@ -531,17 +543,16 @@ class updateWindow(QMainWindow):
         for row in range(0,rowCount):
             item=model.item(row, showColumn[NE_NAME])
             item.setCheckState(Qt.Unchecked)
-            print item.checkState()
+#             print item.checkState()
             
     def closeEvent(self,event):
         self.logging.info(u"结束运行升级软件\n")
         try:
             for thread in self.NEthreads.values():
                 thread.terminate()
+            logging.shutdown() 
         except:
             traceback.print_exc()
-      
-          
         event.accept()
                         
     def checkNeExist(self,ne):
@@ -658,7 +669,7 @@ class updateWindow(QMainWindow):
 
         if _flag ==0:   
             Info = u"没有选择任何网元,检查网元无法继续"
-            QMessageBox.information(self,u"警告",Info)
+            QMessageBox.information(self,u"提示",Info)
             self.logging.warning(u"没有选择任何网元")
             self.logging.info(u"终止检查网元\n")
             self.messageShow(u"终止检查网元")
@@ -775,7 +786,7 @@ class updateWindow(QMainWindow):
         
         if self.versionFile == None:
             Info = u"版本文件不可用，请配置好相关文件后再升级"
-            QMessageBox.information(self,u"警告",Info)
+            QMessageBox.information(self,u"提示",Info)
             self.logging.warning(u"未设置升级版本文件")
             self.logging.info(u"终止升级网元操作\n")
             self.setUIstatusEnable()
@@ -791,7 +802,7 @@ class updateWindow(QMainWindow):
 
         if _flag ==0:   
             Info = u"没有选择任何网元，升级无法继续"
-            QMessageBox.information(self,u"警告",Info)
+            QMessageBox.information(self,u"提示",Info)
             self.logging.warning(u"没有选择任何网元")
             self.logging.info(u"终止升级网元操作\n")
             self.setUIstatusEnable()
@@ -801,7 +812,7 @@ class updateWindow(QMainWindow):
         #暂时只运行同时升级8个AP
         if _flag >= 8: 
             Info = u"同时升级网元数目不能超过8个，请修改"
-            QMessageBox.information(self,u"警告",Info)
+            QMessageBox.information(self,u"提示",Info)
             self.logging.warning(u"同时升级网元数目不能超过8个")
             self.logging.info(u"终止升级网元操作\n")
             self.setUIstatusEnable()
@@ -906,7 +917,7 @@ class updateWindow(QMainWindow):
 
         if _flag ==0:   
             Info = u"没有选择任何网元，取消操作无法继续"
-            QMessageBox.information(self,u"警告",Info)
+            QMessageBox.information(self,u"提示",Info)
             self.logging.warning(u"没有选择任何网元")
             self.logging.info(u"无法开展取消操作\n")
             self.setUIstatusEnable()
@@ -944,10 +955,7 @@ class updateWindow(QMainWindow):
                 for _ne in cantCancelNE:
                     _message +=_ne.neIp+"," 
                     
-                msgBox = QMessageBox()
-                msgBox.setText(u"网元:%s已经执行完复位操作，后续步骤不允许取消"%_message)
-#                 msgBox.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
-                msgBox.exec_() 
+                QMessageBox.information(self,u"提示",u"网元:%s已经执行完复位操作，后续步骤不允许取消"%_message)
                         
     def clearConfig(self):
         #导入配置前，清除上一次配置
@@ -1131,10 +1139,10 @@ class updateWindow(QMainWindow):
         delRowChanges={}
         for row in range(0,rowCount):
             item=model.item(row, showColumn[NE_NAME])
-            print row
-            print item
-            print item.checkState()
-            print item.checkState() ==Qt.Checked 
+#             print row
+#             print item
+#             print item.checkState()
+#             print item.checkState() ==Qt.Checked 
             
             if item.checkState() == Qt.Checked:
                 delRows.append(row)
@@ -1144,11 +1152,10 @@ class updateWindow(QMainWindow):
         
             
         if delRows != []:
-            msgBox = QMessageBox()
-            msgBox.setText(u"被选中的网元将被删除，请确认是否继续")
-            msgBox.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
-            msgBox.setDefaultButton(QMessageBox.Ok)
-            ret= msgBox.exec_() 
+            ret = QMessageBox.warning(self, u"警告",
+                               u"被选中的网元将被删除，请确认是否继续",
+                               QMessageBox.Ok|QMessageBox.Cancel,
+                               QMessageBox.Ok)
                   
             if ret == QMessageBox.Cancel:
                 #选择不删除网元
@@ -1174,7 +1181,7 @@ class updateWindow(QMainWindow):
         
         else:
             Info = u"没有选中网元！请选中后，再操作。"
-            QMessageBox.information(self,u"警告",Info)
+            QMessageBox.information(self,u"提示",Info)
             self.logging.warning(u"没有删除任何网元\n")
             
     def addVersionFile(self):
@@ -1189,7 +1196,7 @@ class updateWindow(QMainWindow):
         self.ui.lineEditVersion.setText("")
         openFile = QFileDialog.getOpenFileName(self, "Find Files", QDir.currentPath())
         
-        if openFile != None :
+        if openFile[0] != u"" :
             self.ui.lineEditVersionFile.setText(openFile[0])
             versionFile = fileCheck(openFile[0])
             if versionFile.getVersion() != OPEN_FILE_OK :

@@ -132,7 +132,7 @@ class telnetAC():
                 self.telnet.write(command + "\r")
             else:
                 self.telnet.write(command + arg + "\r")
-            print "expectStr: %s"%(expectStr)
+#             print "expectStr: %s"%(expectStr)
             result = self.telnet.expect([expectStr], 60)
             telnetDebug(result)
                 
