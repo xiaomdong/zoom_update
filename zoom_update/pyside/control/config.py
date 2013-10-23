@@ -370,7 +370,7 @@ class NE:
             self.logging.info(u"由于意外，终止检查网元信息")
             traceback.print_exc()
             self.softwareVersion="********"
-            return PYPARSING_SOFTWARE_VERSION_ERR   
+#             return PYPARSING_SOFTWARE_VERSION_ERR   
  
         self.logging.info(u"**获取软件版本信息为:%s"%(self.softwareVersion))
         
