@@ -364,11 +364,12 @@ class NE:
             result=tempstr.searchString(self.telnetManagePlatform.commandResult,True)
             self.softwareVersion=result[0][VERSION_STR]
         except:
-            self.telnetManagePlatform.logout()
+#             self.telnetManagePlatform.logout()
             self.logging.error(u"**解析软件版本信息出错")
             self.logging.info(u"**断开管理平台telnet连接")
             self.logging.info(u"由于意外，终止检查网元信息")
             traceback.print_exc()
+            self.softwareVersion="********"
             return PYPARSING_SOFTWARE_VERSION_ERR   
  
         self.logging.info(u"**获取软件版本信息为:%s"%(self.softwareVersion))
